@@ -41,6 +41,8 @@ namespace DraftModeTOUM
                 ClassInjector.RegisterTypeInIl2Cpp<DraftCircleMinigame>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftStatusOverlay>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftRecapOverlay>();
+                ClassInjector.RegisterTypeInIl2Cpp<DraftTypes.BanDraftOverlay>();
+                ClassInjector.RegisterTypeInIl2Cpp<DraftTypes.BanDraftScreenController>();
                 LoggingSystem.Debug("Draft UI Components registered.");
             }
             catch (System.Exception ex)
@@ -133,7 +135,7 @@ namespace DraftModeTOUM
     {
         public const string PLUGIN_GUID = "com.draftmodetoun.mod";
         public const string PLUGIN_NAME = "DraftModeTOUM";
-        public const string PLUGIN_VERSION = "1.0.6-bugfix";
+        public const string PLUGIN_VERSION = "1.0.7";
     }
 
     [HarmonyPatch(typeof(AmongUsClient), nameof(AmongUsClient.OnDisconnected))]
@@ -251,4 +253,3 @@ namespace DraftModeTOUM
         }
     }
 }
-
