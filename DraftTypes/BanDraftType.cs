@@ -9,7 +9,8 @@ namespace DraftModeTOUM.DraftTypes
 {
     public static class BanDraftType
     {
-        public static bool IsEnabled => OptionGroupSingleton<DraftTypeOptions>.Instance.EnableBanDraft;
+        public static bool IsEnabled =>
+            OptionGroupSingleton<DraftTypeOptions>.Instance.DraftType == DraftTypeMode.BanDraft;
         public static bool IsBanPhaseActive { get; private set; }
         public static int BanCount { get; private set; } = 3;
         public static bool ShowBannedRoles { get; private set; } = true;
@@ -27,7 +28,7 @@ namespace DraftModeTOUM.DraftTypes
 
         public static void ApplySettings()
         {
-            var opts = OptionGroupSingleton<DraftTypeOptions>.Instance;
+            var opts = OptionGroupSingleton<BanDraftOptions>.Instance;
             BanCount = Mathf.Clamp(Mathf.RoundToInt(opts.BanRoleCount), 1, 10);
             ShowBannedRoles = opts.ShowBannedRoles;
             AnonymousBanUsers = opts.AnonymousBanUsers;
@@ -89,10 +90,8 @@ namespace DraftModeTOUM.DraftTypes
             if (!IsBanPhaseActive) return;
             BanDraftOverlay.SetCurrentPicker(pickerId);
 
-            if (PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.PlayerId == pickerId)
-                BanDraftScreenController.Show(availableRoleIds);
-            else
-                BanDraftScreenController.Hide();
+            bool isPicker = PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.PlayerId == pickerId;
+            BanDraftScreenController.Show(availableRoleIds, isPicker);
         }
 
         public static void HandleBanPickHost(byte pickerId, ushort roleId)

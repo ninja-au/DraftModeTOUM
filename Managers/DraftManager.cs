@@ -206,6 +206,13 @@ namespace DraftModeTOUM.Managers
 
             DraftTicker.EnsureExists();
 
+            try
+            {
+                var dt = MiraAPI.GameOptions.OptionGroupSingleton<DraftTypeOptions>.Instance?.DraftType;
+                DraftModePlugin.Logger.LogInfo($"[DraftManager] DraftType={dt} BanDraftEnabled={DraftTypes.BanDraftType.IsEnabled}");
+            }
+            catch { }
+
             if (BanDraftType.IsEnabled)
             {
                 BanDraftType.StartBanPhaseHost();
@@ -1225,6 +1232,5 @@ namespace DraftModeTOUM.Managers
         }
     }
 }
-
 
 

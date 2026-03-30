@@ -21,6 +21,7 @@ namespace DraftModeTOUM.DraftTypes
         private List<ushort> _roleIds;
         private bool _hasPicked;
         private TextMeshPro _statusText;
+        private bool _allowPick;
 
         private const string PrefabName = "SelectRoleGame";
         private const float TeamNameFontSize = 3.8f;
@@ -58,7 +59,7 @@ namespace DraftModeTOUM.DraftTypes
             return Color.white;
         }
 
-        public static void Show(List<ushort> roleIds)
+        public static void Show(List<ushort> roleIds, bool allowPick)
         {
             Hide();
             if (HudManager.Instance?.FullScreen != null)
@@ -67,6 +68,7 @@ namespace DraftModeTOUM.DraftTypes
             DontDestroyOnLoad(go);
             Instance = go.AddComponent<BanDraftScreenController>();
             Instance._roleIds = roleIds ?? new List<ushort>();
+            Instance._allowPick = allowPick;
             Instance.BuildScreen();
         }
 
@@ -135,7 +137,9 @@ namespace DraftModeTOUM.DraftTypes
                 {
                     _statusText.font = HudManager.Instance.TaskPanel.taskText.font;
                     _statusText.fontMaterial = HudManager.Instance.TaskPanel.taskText.fontMaterial;
-                    _statusText.text = "<color=#FFFFFF><b>Ban a Role</b></color>";
+                    _statusText.text = _allowPick
+                        ? "<color=#FFFFFF><b>You are a ban role selector</b></color>"
+                        : "<color=#FFFFFF><b>Waiting for bans...</b></color>";
                     statusGo.gameObject.SetActive(true);
                 }
             }
@@ -183,10 +187,18 @@ namespace DraftModeTOUM.DraftTypes
                     card.RoleName, card.TeamName,
                     card.Icon ?? TouRoleIcons.RandomAny.LoadAsset(),
                     i, totalCards, card.Color,
-                    cardScale, useGrid, spacing);
+                    cardScale, useGrid, spacing, _allowPick);
 
-                btn.OnClick.RemoveAllListeners();
-                btn.OnClick.AddListener((UnityAction)(() => OnCardClicked(capturedRoleId)));
+                if (_allowPick)
+                {
+                    btn.OnClick.RemoveAllListeners();
+                    btn.OnClick.AddListener((UnityAction)(() => OnCardClicked(capturedRoleId)));
+                }
+                else
+                {
+                    btn.OnClick.RemoveAllListeners();
+                    btn.enabled = false;
+                }
             }
 
             Coroutines.Start(CoAnimateCards(rolesHolder, cardScale, useGrid, totalCards));
@@ -203,7 +215,8 @@ namespace DraftModeTOUM.DraftTypes
             Color color,
             float cardScale,
             bool useGrid = false,
-            float spacing = 0f)
+            float spacing = 0f,
+            bool allowPick = true)
         {
             var newRoleObj = UnityEngine.Object.Instantiate(rolePrefab, rolesHolder);
             newRoleObj.name = $"BanDraftCard_{cardIndex}";
@@ -219,16 +232,24 @@ namespace DraftModeTOUM.DraftTypes
             float randZ = (-10f + tiltIndex * 5f) * tiltScale
                           + UnityEngine.Random.Range(-1.5f, 1.5f) * tiltScale;
 
-            passiveButton.OnMouseOver.AddListener((UnityAction)(() =>
+            if (allowPick)
             {
-                var pos = newRoleObj.transform.localPosition;
-                newRoleObj.transform.localPosition = new Vector3(pos.x, pos.y, pos.z - 10f);
-            }));
-            passiveButton.OnMouseOut.AddListener((UnityAction)(() =>
+                passiveButton.OnMouseOver.AddListener((UnityAction)(() =>
+                {
+                    var pos = newRoleObj.transform.localPosition;
+                    newRoleObj.transform.localPosition = new Vector3(pos.x, pos.y, pos.z - 10f);
+                }));
+                passiveButton.OnMouseOut.AddListener((UnityAction)(() =>
+                {
+                    var pos = newRoleObj.transform.localPosition;
+                    newRoleObj.transform.localPosition = new Vector3(pos.x, pos.y, pos.z + 10f);
+                }));
+            }
+            else
             {
-                var pos = newRoleObj.transform.localPosition;
-                newRoleObj.transform.localPosition = new Vector3(pos.x, pos.y, pos.z + 10f);
-            }));
+                passiveButton.OnMouseOver.RemoveAllListeners();
+                passiveButton.OnMouseOut.RemoveAllListeners();
+            }
 
             newRoleObj.transform.localRotation = Quaternion.Euler(0f, 0f, -randZ);
 
