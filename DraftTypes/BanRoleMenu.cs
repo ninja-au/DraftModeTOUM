@@ -121,11 +121,11 @@ public sealed class BanRoleMenu(IntPtr cppPtr) : Minigame(cppPtr)
         searchText = string.Empty;
         currentPage = 0;
 
-        var roles = roleIds
-            .Distinct()
-            .Select(id => (id, role: DraftModeTOUM.Managers.DraftUiManager.ResolveRole(id)))
-            .Where(x => x.role != null)
-            .Select(x => (x.id, role: x.role!))
+        var available = new HashSet<ushort>(roleIds ?? new List<ushort>());
+
+        var roles = TownOfUs.Utilities.MiscUtils.AllRoles
+            .Where(r => r != null)
+            .Select(r => (role: r, id: (ushort)r.Role))
             .OrderBy(x => x.role.NiceName)
             .ToList();
 
@@ -133,12 +133,26 @@ public sealed class BanRoleMenu(IntPtr cppPtr) : Minigame(cppPtr)
         {
             var roleId = roles[i].id;
             var role = roles[i].role;
+            bool isAvailable = available.Contains(roleId);
 
             var shapeshifterPanel = Instantiate(panelPrefab, transform);
             shapeshifterPanel!.transform.localPosition = new Vector3(0f, 0f, -1f);
-            shapeshifterPanel.SetRole(i, role, () => { onRolePick?.Invoke(roleId); });
+            shapeshifterPanel.SetRole(i, role, () =>
+            {
+                if (isAvailable)
+                    onRolePick?.Invoke(roleId);
+            });
             shapeshifterPanel.gameObject.transform.FindChild("Nameplate").FindChild("Highlight")
                 .FindChild("ShapeshifterIcon").gameObject.SetActive(false);
+
+            if (!isAvailable)
+            {
+                shapeshifterPanel.Button.enabled = false;
+                var bg = shapeshifterPanel.GetComponentInChildren<SpriteRenderer>();
+                if (bg != null) bg.color = new Color(bg.color.r * 0.35f, bg.color.g * 0.35f, bg.color.b * 0.35f, 1f);
+                foreach (var tmp in shapeshifterPanel.GetComponentsInChildren<TMP_Text>(true))
+                    tmp.color = new Color(tmp.color.r * 0.6f, tmp.color.g * 0.6f, tmp.color.b * 0.6f, 1f);
+            }
 
             allEntries.Add(new MenuEntry(shapeshifterPanel, role.NiceName, roleId));
         }
