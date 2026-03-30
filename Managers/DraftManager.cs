@@ -1,5 +1,6 @@
 ﻿using AmongUs.GameOptions;
 using DraftModeTOUM;
+using DraftModeTOUM.DraftTypes;
 using DraftModeTOUM.Patches;
 using MiraAPI.Utilities;
 using HarmonyLib;
@@ -205,6 +206,20 @@ namespace DraftModeTOUM.Managers
 
             DraftTicker.EnsureExists();
 
+            if (BanDraftType.IsEnabled)
+            {
+                BanDraftType.StartBanPhaseHost();
+                return;
+            }
+
+            StartDraftInternal();
+        }
+
+        internal static void StartDraftInternal()
+        {
+            if (!AmongUsClient.Instance.AmHost) return;
+            if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Joined) return;
+
             string  savedForcedName   = _forcedRoleName;
             byte    savedForcedTarget = _forcedRoleTargetId;
 
@@ -225,6 +240,7 @@ namespace DraftModeTOUM.Managers
                 .Where(p => p != null && !p.Data.Disconnected).ToList();
 
             _pool = RolePoolBuilder.BuildPool();
+            BanDraftType.ApplyBansToPool(_pool);
             if (_pool.RoleIds.Count == 0) return;
 
             int totalSlots    = players.Count;
@@ -447,6 +463,8 @@ namespace DraftModeTOUM.Managers
 
             if (cancelledBeforeCompletion)
                 UpCommandRequests.Clear();
+
+            BanDraftType.Reset();
         }
 
         
@@ -1207,7 +1225,6 @@ namespace DraftModeTOUM.Managers
         }
     }
 }
-
 
 
 
