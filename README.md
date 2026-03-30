@@ -28,11 +28,7 @@ A [BepInEx](https://github.com/BepInEx/BepInEx) mod for **Among Us** running [To
 
 ### Starting a Draft
 
-Only the **host** can start a draft. Once everyone is in the lobby, the host can either press the **Start** button (auto-starts the draft) or type in chat:
-
-```
-/draft
-```
+Only the **Host** can start a draft. Once everyone is in the lobby, the host can press the **Start** button (auto-starts the draft)
 
 This kicks off the draft sequence:
 
@@ -51,18 +47,13 @@ If the timer runs out before you pick, a random role is automatically assigned a
 
 ---
 
-## UI Styles
-
-There are two different UIs for picking your role. Each player can choose their preferred style independently via Local Settings (see [Local Settings](#local-settings) below), or the host can set the default for everyone.
-
-### Card Style
+## UI
 
 Roles are presented as large clickable cards spread across the screen. Each card shows the role name, faction, and icon with a colored glow.
 
 ![Card Style UI](screenshots/cards.png)
 
 ---
-
 
 ## Draft Settings
 
