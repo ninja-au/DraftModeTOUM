@@ -88,14 +88,11 @@ The recap can be toggled off so roles stay secret — only the player who picked
 
 ## Local Settings
 
-Each player can override the host's UI style choice for themselves. Open **Settings → Mira → Draft Mode** to find:
+Each player can toggle whether they hear audio for when the draft starts, and more. Open **Settings → Mira → Draft Mode** to find:
 
 | Setting | Description |
 |---|---|
-| Override UI Style | When ON, ignores the host's style setting and uses your own preference |
-| Use Circle Style | The style to use when Override is ON. Off = Cards, On = Circle |
-
-This means every player in the lobby can independently use whichever picker style they prefer, regardless of what the host has configured.
+| Placeholder | Stuff for the sound |
 
 ---
 
