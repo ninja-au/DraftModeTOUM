@@ -63,13 +63,6 @@ Roles are presented as large clickable cards spread across the screen. Each card
 
 ---
 
-### Circle Style
-
-Roles are arranged in a spinning wheel around the center of the screen. Hovering over a role highlights it and shows its name and team in the center panel. A turn order list is displayed on the left side of the screen.
-
-![Circle Style UI](screenshots/circle.png)
-
----
 
 ## Draft Settings
 
@@ -91,26 +84,13 @@ After every player has picked, a **Draft Recap** is shown on screen for all play
 
 ![Draft Recap](screenshots/recap.png)
 
-The recap can be toggled off so roles stay secret — only the player who picked knows what they got. To toggle it, the host can either use the **Show Draft Recap** option in settings, or type in chat:
-
-```
-/draftrecap
-```
-
-The current state is confirmed in chat:
-
-```
-Draft recap is now: OFF
-```
-
+The recap can be toggled off so roles stay secret — only the player who picked knows what they got. To toggle it, the host can use the **Show Draft Recap** option in settings
 ---
 
 ## Chat Commands
 
 | Command | Who | Description |
 |---|---|---|
-| `/draft` | Host only | Starts the draft |
-| `/draftrecap` | Host only | Toggles the draft recap on/off |
 | `/draftend` | Host only | Cancels the currently active draft |
 
 ---
@@ -135,6 +115,9 @@ The roles available to be drafted are controlled by the host's **TOUM Role Setti
 - Haunter
 - Spectre
 - Pestilence
+- Mayor
+- HnS Roles
+- Traitor
 
 Faction caps (Max Impostors, Max Neutral Killings, Max Neutral Other) are applied globally across the entire draft — once a cap is hit, no more roles of that faction will be offered to any player.
 
