@@ -226,6 +226,7 @@ namespace DraftModeTOUM.Managers
         {
             if (!AmongUsClient.Instance.AmHost) return;
             if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Joined) return;
+            if (DraftTypes.BanDraftType.IsBanPhaseActive) return;
 
             string  savedForcedName   = _forcedRoleName;
             byte    savedForcedTarget = _forcedRoleTargetId;
@@ -1232,5 +1233,4 @@ namespace DraftModeTOUM.Managers
         }
     }
 }
-
 

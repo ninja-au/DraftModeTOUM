@@ -45,6 +45,7 @@ namespace DraftModeTOUM.DraftTypes
                 .Where(p => p != null && !p.Data.Disconnected).ToList();
             if (players.Count == 0)
             {
+                DraftModePlugin.Logger.LogInfo("[BanDraft] No players found, skipping ban phase.");
                 DraftManager.StartDraftInternal();
                 return;
             }
@@ -54,11 +55,13 @@ namespace DraftModeTOUM.DraftTypes
             _banPool = RolePoolBuilder.BuildPool();
             if (_banPool.RoleIds.Count == 0 || BanCount <= 0)
             {
+                DraftModePlugin.Logger.LogInfo("[BanDraft] Empty role pool or BanCount=0, skipping ban phase.");
                 DraftManager.StartDraftInternal();
                 return;
             }
 
             int banSlots = Mathf.Clamp(BanCount, 1, Mathf.Min(players.Count, _banPool.RoleIds.Count));
+            DraftModePlugin.Logger.LogInfo($"[BanDraft] Starting ban phase. players={players.Count} banSlots={banSlots} pool={_banPool.RoleIds.Count}");
 
             var shuffled = players.OrderBy(_ => UnityEngine.Random.value).ToList();
             for (int i = 0; i < banSlots; i++)
@@ -67,16 +70,18 @@ namespace DraftModeTOUM.DraftTypes
             IsBanPhaseActive = true;
             _currentIndex = 0;
 
-            HandleBanStartLocal(_banOrder, ShowBannedRoles, AnonymousBanUsers);
-            DraftNetworkHelper.BroadcastBanStart(_banOrder, ShowBannedRoles, AnonymousBanUsers);
+            var orderCopy = _banOrder.ToList();
+            HandleBanStartLocal(orderCopy, ShowBannedRoles, AnonymousBanUsers);
+            DraftNetworkHelper.BroadcastBanStart(orderCopy, ShowBannedRoles, AnonymousBanUsers);
             StartNextBanTurnHost();
         }
 
         public static void HandleBanStartLocal(List<byte> order, bool showBannedRoles, bool anonymousUsers)
         {
             IsBanPhaseActive = true;
+            var incoming = new List<byte>(order);
             _banOrder.Clear();
-            _banOrder.AddRange(order);
+            _banOrder.AddRange(incoming);
             _bannedByPlayer.Clear();
             _bannedRoleIds.Clear();
             ShowBannedRoles = showBannedRoles;
@@ -176,6 +181,7 @@ namespace DraftModeTOUM.DraftTypes
 
             if (_currentIndex >= _banOrder.Count)
             {
+                DraftModePlugin.Logger.LogInfo("[BanDraft] Ban phase complete, starting draft.");
                 EndBanPhaseHost();
                 return;
             }
@@ -183,11 +189,13 @@ namespace DraftModeTOUM.DraftTypes
             var available = GetAvailableBanRoleIds();
             if (available.Count == 0)
             {
+                DraftModePlugin.Logger.LogInfo("[BanDraft] No available roles to ban, starting draft.");
                 EndBanPhaseHost();
                 return;
             }
 
             byte pickerId = _banOrder[_currentIndex];
+            DraftModePlugin.Logger.LogInfo($"[BanDraft] Ban turn {_currentIndex + 1}/{_banOrder.Count} picker={pickerId} available={available.Count}");
             DraftNetworkHelper.BroadcastBanTurn(pickerId, available, _currentIndex, _banOrder.Count);
         }
 

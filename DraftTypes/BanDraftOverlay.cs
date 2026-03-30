@@ -39,7 +39,7 @@ namespace DraftModeTOUM.DraftTypes
             public Vector3 CardAnchor;
         }
 
-        public static void Show(IReadOnlyList<byte> order, bool showBannedRoles, bool anonymousUsers)
+        public static void Show(List<byte> order, bool showBannedRoles, bool anonymousUsers)
         {
             EnsureExists();
             _instance._showBannedRoles = showBannedRoles;
@@ -64,15 +64,13 @@ namespace DraftModeTOUM.DraftTypes
         public static void SetBannedRole(byte pickerId, ushort roleId)
         {
             if (_instance == null) return;
-            if (!_instance._entryByPlayer.TryGetValue(pickerId, out var entry)) return;
-            _instance.SetEntryRole(entry, roleId, showHidden: false);
+            _instance.SetEntryRoleForPlayer(pickerId, roleId, showHidden: false);
         }
 
         public static void SetBannedRoleHidden(byte pickerId)
         {
             if (_instance == null) return;
-            if (!_instance._entryByPlayer.TryGetValue(pickerId, out var entry)) return;
-            _instance.SetEntryRole(entry, 0, showHidden: true);
+            _instance.SetEntryRoleForPlayer(pickerId, 0, showHidden: true);
         }
 
         private static void EnsureExists()
@@ -135,7 +133,7 @@ namespace DraftModeTOUM.DraftTypes
             _root.SetActive(false);
         }
 
-        private void BuildList(IReadOnlyList<byte> order)
+        private void BuildList(List<byte> order)
         {
             if (HudManager.Instance == null) return;
             if (_root == null) BuildUI();
@@ -197,8 +195,9 @@ namespace DraftModeTOUM.DraftTypes
             }
         }
 
-        private void SetEntryRole(BanEntry entry, ushort roleId, bool showHidden)
+        private void SetEntryRoleForPlayer(byte pickerId, ushort roleId, bool showHidden)
         {
+            if (!_entryByPlayer.TryGetValue(pickerId, out var entry)) return;
             if (entry.StatusText != null)
                 entry.StatusText.text = showHidden ? "Banned" : string.Empty;
 
