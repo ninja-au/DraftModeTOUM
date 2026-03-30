@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using AmongUs.GameOptions;
 using DraftModeTOUM.Patches;
-using MiraAPI.LocalSettings;
 using MiraAPI.Roles;
 using MiraAPI.Utilities;
 using TownOfUs.Assets;
@@ -12,91 +11,28 @@ using UnityEngine;
 
 namespace DraftModeTOUM.Managers
 {
-    
-    
-    
-    
-    
     public static class DraftUiManager
     {
-        private static DraftCircleMinigame? _circleMinigame;
-        private static List<ushort>         _lastOfferedRoleIds = new();
-
-        private static bool UseCircle
-        {
-            get
-            {
-                var local = LocalSettingsTabSingleton<DraftModeLocalSettings>.Instance;
-                if (local != null && local.OverrideUiStyle.Value)
-                    return local.UseCircleStyle.Value;
-                return MiraAPI.GameOptions.OptionGroupSingleton<DraftModeOptions>.Instance.UseCircleStyle;
-            }
-        }
-
-        
-
-        
-        
-        
-        
         public static void ShowPicker(List<ushort> roleIds)
         {
             if (HudManager.Instance == null || roleIds == null || roleIds.Count == 0) return;
             DraftStatusOverlay.SetState(OverlayState.BackgroundOnly);
-
-            if (UseCircle)
-                ShowCircle(roleIds);
-            else
-                DraftScreenController.Show(roleIds.ToArray());
+            DraftScreenController.Show(roleIds.ToArray());
         }
 
         public static void RefreshTurnList()
         {
             DraftStatusOverlay.Refresh();
-
-            if (UseCircle && _circleMinigame != null)
-            {
-                bool alive = false;
-                try { alive = _circleMinigame.gameObject != null && _circleMinigame.gameObject.activeSelf; } catch { }
-                if (alive)
-                    _circleMinigame.RefreshTurnList();
-            }
         }
 
         public static void CloseAll()
         {
             DraftScreenController.Hide();
 
-            var circle = _circleMinigame;
-            _circleMinigame = null;
-            if (circle != null)
-            {
-                try
-                {
-                    bool alive = false;
-                    try { alive = circle.gameObject != null && circle.gameObject.activeSelf; } catch { }
-                    if (alive) circle.Close();
-                    else
-                    {
-                        bool exists = false;
-                        try { exists = circle.gameObject != null; } catch { }
-                        if (exists) UnityEngine.Object.Destroy(circle.gameObject);
-                    }
-                }
-                catch { }
-            }
-
             if (DraftManager.IsDraftActive)
                 DraftStatusOverlay.SetState(OverlayState.Waiting);
         }
 
-        
-
-        
-        
-        
-        
-        
         public static List<DraftRoleCard> BuildCards(List<ushort> roleIds)
         {
             return BuildCards(roleIds, DraftManager.ShowRandomOption);
@@ -110,8 +46,8 @@ namespace DraftModeTOUM.Managers
                 ushort id   = roleIds[i];
                 var    role = ResolveRole(id);
 
-                string displayName = role?.NiceName ?? $"Role {id}";
-                string team        = GetTeamLabel(role) ?? "Unknown";
+                string displayName = role?.NiceName          ?? $"Role {id}";
+                string team        = GetTeamLabel(role)       ?? "Unknown";
                 Sprite icon        = GetRoleIcon(role);
                 Color  color       = GetRoleColor(role);
 
@@ -127,8 +63,6 @@ namespace DraftModeTOUM.Managers
 
             return cards;
         }
-
-        
 
         public static RoleBehaviour? ResolveRole(ushort roleId)
         {
@@ -166,45 +100,7 @@ namespace DraftModeTOUM.Managers
             return Color.white;
         }
 
-        
-
-        private static void ShowCircle(List<ushort> roleIds)
-        {
-            _lastOfferedRoleIds = roleIds;
-            EnsureCircleMinigame();
-            if (_circleMinigame == null) return;
-            var cards = BuildCards(roleIds);
-            _circleMinigame.Open(cards, OnPickSelected);
-        }
-
-        private static void EnsureCircleMinigame()
-        {
-            if (_circleMinigame != null)
-            {
-                bool destroyed = false;
-                try { destroyed = _circleMinigame.gameObject == null; } catch { destroyed = true; }
-                if (destroyed) _circleMinigame = null;
-            }
-            if (_circleMinigame == null)
-                _circleMinigame = DraftCircleMinigame.Create();
-        }
-
-        private static void OnPickSelected(int index)
-        {
-            ushort? pickedId = (index < _lastOfferedRoleIds.Count) ? _lastOfferedRoleIds[index] : (ushort?)null;
-            DraftModePlugin.Logger.LogInfo($"[DraftUiManager] OnPickSelected index={index} roleId={pickedId}");
-            if (pickedId.HasValue)
-                DraftStatusOverlay.NotifyLocalPlayerPicked(pickedId.Value);
-            var circle = _circleMinigame;
-            _circleMinigame = null;
-            try { circle?.Close(); } catch { }
-            DraftNetworkHelper.SendPickToHost(index);
-        }
-
-        
-
         public static string Normalize(string s) =>
             (s ?? string.Empty).Replace(" ", "").Replace("-", "");
     }
 }
-

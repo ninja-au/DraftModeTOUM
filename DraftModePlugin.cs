@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Logging;
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
@@ -38,7 +38,6 @@ namespace DraftModeTOUM
                 ClassInjector.RegisterTypeInIl2Cpp<DraftTicker>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftDashboardReporter>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftScreenController>();
-                ClassInjector.RegisterTypeInIl2Cpp<DraftCircleMinigame>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftStatusOverlay>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftRecapOverlay>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftTypes.BanDraftOverlay>();
@@ -150,8 +149,6 @@ namespace DraftModeTOUM
             bool draftStillInProgress = DraftManager.IsDraftActive;
             DraftManager.Reset(cancelledBeforeCompletion: draftStillInProgress);
 
-            
-            
             DraftStatusOverlay.ClearHudReferences();
             DraftDashboardReporter.ClearLobbyCode();
             DraftModePlugin.Logger.LogInfo($"[DraftModePlugin] Session cleared on disconnect.");
@@ -201,7 +198,6 @@ namespace DraftModeTOUM
         public static void Postfix()
         {
             DraftDashboardReporter.EnsureExists();
-            
             DraftStatusOverlay.ClearHudReferences();
             DraftModePlugin.Logger.LogInfo("[DraftModePlugin] DashboardReporter ensured from MainMenu.");
         }
