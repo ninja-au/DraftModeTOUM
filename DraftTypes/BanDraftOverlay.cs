@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Reactor.Utilities.Attributes;
 using TMPro;
-using TownOfUs.Assets;
-using TownOfUs.Utilities;
 using UnityEngine;
 using DraftModeTOUM.Managers;
 
@@ -23,11 +21,6 @@ namespace DraftModeTOUM.DraftTypes
         private bool _showBannedRoles = true;
         private bool _anonymousUsers = false;
 
-        private static GameObject _cachedRolePrefab;
-
-        private const float CardScale = 0.35f;
-        private const float CardTiltDeg = -8f;
-
         public BanDraftOverlay(System.IntPtr ptr) : base(ptr) { }
 
         private sealed class BanEntry
@@ -35,7 +28,6 @@ namespace DraftModeTOUM.DraftTypes
             public byte PlayerId;
             public TextMeshPro NameText;
             public TextMeshPro StatusText;
-            public GameObject RoleCard;
             public Vector3 CardAnchor;
         }
 
@@ -103,8 +95,13 @@ namespace DraftModeTOUM.DraftTypes
         {
             if (HudManager.Instance == null) return;
 
-            var font = HudManager.Instance.TaskPanel.taskText.font;
-            var fontMat = HudManager.Instance.TaskPanel.taskText.fontMaterial;
+            var taskText = HudManager.Instance.TaskPanel != null ? HudManager.Instance.TaskPanel.taskText : null;
+            var font = taskText != null ? taskText.font : null;
+            var fontMat = taskText != null ? taskText.fontMaterial : null;
+            if (font == null)
+            {
+                try { font = TMP_Settings.defaultFontAsset; } catch { }
+            }
 
             _bgOverlay = new GameObject("BanDraftBg");
             _bgOverlay.transform.SetParent(HudManager.Instance.transform, false);
@@ -143,13 +140,17 @@ namespace DraftModeTOUM.DraftTypes
             {
                 if (e.NameText != null) Destroy(e.NameText.gameObject);
                 if (e.StatusText != null) Destroy(e.StatusText.gameObject);
-                if (e.RoleCard != null) Destroy(e.RoleCard);
             }
             _entries.Clear();
             _entryByPlayer.Clear();
 
-            var font = HudManager.Instance.TaskPanel.taskText.font;
-            var fontMat = HudManager.Instance.TaskPanel.taskText.fontMaterial;
+            var taskText = HudManager.Instance.TaskPanel != null ? HudManager.Instance.TaskPanel.taskText : null;
+            var font = taskText != null ? taskText.font : null;
+            var fontMat = taskText != null ? taskText.fontMaterial : null;
+            if (font == null)
+            {
+                try { font = TMP_Settings.defaultFontAsset; } catch { }
+            }
 
             float startY = 1.6f;
             float stepY = 1.15f;
@@ -172,7 +173,6 @@ namespace DraftModeTOUM.DraftTypes
                     PlayerId = pid,
                     NameText = nameText,
                     StatusText = statusText,
-                    RoleCard = null,
                     CardAnchor = new Vector3(0f, y - 0.9f, 0f)
                 };
 
@@ -190,8 +190,7 @@ namespace DraftModeTOUM.DraftTypes
                 if (entry.NameText == null || entry.StatusText == null) continue;
                 bool isCurrent = entry.PlayerId == _currentPickerId;
                 entry.NameText.color = isCurrent ? new Color(1f, 0.85f, 0.1f) : Color.white;
-                if (entry.RoleCard == null)
-                    entry.StatusText.color = isCurrent ? new Color(1f, 0.85f, 0.1f) : new Color(0.85f, 0.85f, 0.85f);
+                entry.StatusText.color = isCurrent ? new Color(1f, 0.85f, 0.1f) : new Color(0.85f, 0.85f, 0.85f);
             }
         }
 
@@ -199,76 +198,17 @@ namespace DraftModeTOUM.DraftTypes
         {
             if (!_entryByPlayer.TryGetValue(pickerId, out var entry)) return;
             if (entry.StatusText != null)
-                entry.StatusText.text = showHidden ? "Banned" : string.Empty;
-
-            if (entry.RoleCard != null)
             {
-                Destroy(entry.RoleCard);
-                entry.RoleCard = null;
+                if (showHidden || !_showBannedRoles)
+                {
+                    entry.StatusText.text = "Banned";
+                }
+                else
+                {
+                    var role = DraftUiManager.ResolveRole(roleId);
+                    entry.StatusText.text = role?.NiceName ?? $"Role {roleId}";
+                }
             }
-
-            if (!_showBannedRoles || showHidden) return;
-
-            if (!EnsureRolePrefab() || HudManager.Instance == null) return;
-
-            var role = DraftUiManager.ResolveRole(roleId);
-            string roleName = role?.NiceName ?? $"Role {roleId}";
-            string teamName = DraftUiManager.GetTeamLabel(role);
-            Sprite icon = DraftUiManager.GetRoleIcon(role);
-            Color color = DraftUiManager.GetRoleColor(role);
-
-            var cardObj = Instantiate(_cachedRolePrefab, _root.transform);
-            cardObj.name = "BanDraftRoleCard";
-
-            if (cardObj.transform.childCount == 0) { Destroy(cardObj); return; }
-            var actualCard = cardObj.transform.GetChild(0);
-            if (actualCard.childCount < 3) { Destroy(cardObj); return; }
-
-            var roleText = actualCard.GetChild(0).GetComponent<TextMeshPro>();
-            var roleImage = actualCard.GetChild(1).GetComponent<SpriteRenderer>();
-            var teamText = actualCard.GetChild(2).GetComponent<TextMeshPro>();
-            var rollover = actualCard.GetComponent<ButtonRolloverHandler>();
-
-            cardObj.transform.localPosition = entry.CardAnchor;
-            cardObj.transform.localScale = Vector3.one * CardScale;
-            cardObj.transform.localRotation = Quaternion.Euler(0f, 0f, CardTiltDeg);
-
-            if (roleText != null) roleText.text = roleName;
-            if (teamText != null)
-            {
-                teamText.text = teamName;
-                teamText.enableAutoSizing = true;
-                teamText.fontSizeMax = 3.2f;
-                teamText.color = GetTeamColor(teamName);
-            }
-            if (roleImage != null)
-            {
-                roleImage.sprite = icon;
-                roleImage.SetSizeLimit(2.0f);
-                roleImage.color = Color.white;
-            }
-
-            var cardBg = actualCard.GetComponent<SpriteRenderer>();
-            if (cardBg != null) cardBg.color = color;
-            if (rollover != null)
-            {
-                rollover.OutColor = color;
-                rollover.OverColor = Color.white;
-            }
-            if (roleText != null) roleText.color = color;
-
-            foreach (var tmp in cardObj.GetComponentsInChildren<TMP_Text>())
-            {
-                var r = tmp.GetComponent<Renderer>();
-                if (r != null) { r.sortingLayerName = "UI"; r.sortingOrder = 1; }
-            }
-            foreach (var sr in cardObj.GetComponentsInChildren<SpriteRenderer>())
-            {
-                sr.sortingLayerName = "UI";
-                sr.sortingOrder = 1;
-            }
-
-            entry.RoleCard = cardObj;
             UpdateHighlight();
         }
 
@@ -277,27 +217,6 @@ namespace DraftModeTOUM.DraftTypes
             if (_anonymousUsers) return $"User {index + 1}";
             var player = PlayerControl.AllPlayerControls.ToArray().FirstOrDefault(p => p != null && p.PlayerId == pid);
             return player != null ? player.Data.PlayerName : "Unknown";
-        }
-
-        private static bool EnsureRolePrefab()
-        {
-            if (_cachedRolePrefab != null) return true;
-            try
-            {
-                var bundle = TouAssets.MainBundle;
-                if (bundle == null) return false;
-                var prefab = bundle.LoadAsset("SelectRoleGame")?.TryCast<GameObject>();
-                if (prefab == null) return false;
-                var holderGo = prefab.transform.Find("RoleCardHolder");
-                if (holderGo == null) return false;
-                _cachedRolePrefab = holderGo.gameObject;
-                return true;
-            }
-            catch (System.Exception ex)
-            {
-                DraftModePlugin.Logger.LogWarning($"[BanDraftOverlay] Prefab load failed: {ex.Message}");
-                return false;
-            }
         }
 
         private static TextMeshPro MakeText(
@@ -311,8 +230,8 @@ namespace DraftModeTOUM.DraftTypes
             go.transform.localPosition = offset;
 
             var tmp = go.AddComponent<TextMeshPro>();
-            tmp.font = font;
-            tmp.fontMaterial = fontMat;
+            if (font != null) tmp.font = font;
+            if (fontMat != null) tmp.fontMaterial = fontMat;
             tmp.fontSize = fontSize;
             tmp.color = color;
             tmp.alignment = TextAlignmentOptions.Center;

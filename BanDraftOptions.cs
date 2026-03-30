@@ -20,4 +20,7 @@ public sealed class BanDraftOptions : AbstractOptionGroup
 
     [ModdedToggleOption("Anonymous Ban Users")]
     public bool AnonymousBanUsers { get; set; } = false;
+
+    [ModdedNumberOption("Ban Pick Timeout (Seconds)", 0f, 30f, 1f, MiraNumberSuffixes.None, "0")]
+    public float BanPickTimeoutSeconds { get; set; } = 10f;
 }

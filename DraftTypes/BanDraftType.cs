@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DraftModeTOUM.Managers;
+using DraftModeTOUM;
 using DraftModeTOUM.Patches;
 using MiraAPI.GameOptions;
 using UnityEngine;
@@ -15,6 +16,7 @@ namespace DraftModeTOUM.DraftTypes
         public static int BanCount { get; private set; } = 3;
         public static bool ShowBannedRoles { get; private set; } = true;
         public static bool AnonymousBanUsers { get; private set; } = false;
+        public static float BanPickTimeoutSeconds { get; private set; } = 10f;
 
         private static readonly List<byte> _banOrder = new();
         private static readonly Dictionary<byte, ushort> _bannedByPlayer = new();
@@ -22,6 +24,8 @@ namespace DraftModeTOUM.DraftTypes
         private static DraftRolePool _banPool = new();
         private static int _currentIndex = 0;
         private static bool _preserveBansForNextDraft = false;
+        private static float _banTurnTimeLeft = 0f;
+        private static byte _currentPickerId = 255;
 
         public static IReadOnlyList<byte> BanOrder => _banOrder;
         public static IReadOnlyCollection<ushort> BannedRoleIds => _bannedRoleIds;
@@ -32,6 +36,7 @@ namespace DraftModeTOUM.DraftTypes
             BanCount = Mathf.Clamp(Mathf.RoundToInt(opts.BanRoleCount), 1, 10);
             ShowBannedRoles = opts.ShowBannedRoles;
             AnonymousBanUsers = opts.AnonymousBanUsers;
+            BanPickTimeoutSeconds = Mathf.Clamp(opts.BanPickTimeoutSeconds, 0f, 60f);
         }
 
         public static void StartBanPhaseHost()
@@ -69,10 +74,23 @@ namespace DraftModeTOUM.DraftTypes
 
             IsBanPhaseActive = true;
             _currentIndex = 0;
+            _currentPickerId = 255;
+            _banTurnTimeLeft = 0f;
 
             var orderCopy = _banOrder.ToList();
-            HandleBanStartLocal(orderCopy, ShowBannedRoles, AnonymousBanUsers);
-            DraftNetworkHelper.BroadcastBanStart(orderCopy, ShowBannedRoles, AnonymousBanUsers);
+            try
+            {
+                HandleBanStartLocal(orderCopy, ShowBannedRoles, AnonymousBanUsers);
+                DraftNetworkHelper.BroadcastBanStart(orderCopy, ShowBannedRoles, AnonymousBanUsers);
+            }
+            catch (System.Exception ex)
+            {
+                DraftModePlugin.Logger.LogWarning($"[BanDraft] Ban UI failed: {ex.Message} — falling back to normal draft.");
+                IsBanPhaseActive = false;
+                DraftManager.StartDraftInternal();
+                return;
+            }
+
             StartNextBanTurnHost();
         }
 
@@ -86,8 +104,16 @@ namespace DraftModeTOUM.DraftTypes
             _bannedRoleIds.Clear();
             ShowBannedRoles = showBannedRoles;
             AnonymousBanUsers = anonymousUsers;
+            DraftStatusOverlay.SetState(OverlayState.BackgroundOnly);
 
-            BanDraftOverlay.Show(_banOrder, ShowBannedRoles, AnonymousBanUsers);
+            try
+            {
+                BanDraftOverlay.Show(_banOrder, ShowBannedRoles, AnonymousBanUsers);
+            }
+            catch (System.Exception ex)
+            {
+                DraftModePlugin.Logger.LogWarning($"[BanDraft] Overlay failed: {ex.Message}");
+            }
         }
 
         public static void HandleBanTurnLocal(byte pickerId, List<ushort> availableRoleIds, int index, int total)
@@ -96,7 +122,10 @@ namespace DraftModeTOUM.DraftTypes
             BanDraftOverlay.SetCurrentPicker(pickerId);
 
             bool isPicker = PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.PlayerId == pickerId;
-            BanDraftScreenController.Show(availableRoleIds, isPicker);
+            if (isPicker)
+                BanDraftScreenController.Show(availableRoleIds, true);
+            else
+                BanDraftScreenController.Hide();
         }
 
         public static void HandleBanPickHost(byte pickerId, ushort roleId)
@@ -139,6 +168,7 @@ namespace DraftModeTOUM.DraftTypes
             IsBanPhaseActive = false;
             BanDraftOverlay.Hide();
             BanDraftScreenController.Hide();
+            DraftStatusOverlay.SetState(OverlayState.Hidden);
         }
 
         public static void ApplyBansToPool(DraftRolePool pool)
@@ -167,6 +197,8 @@ namespace DraftModeTOUM.DraftTypes
             _bannedByPlayer.Clear();
             if (!keepBans) _bannedRoleIds.Clear();
             _currentIndex = 0;
+            _currentPickerId = 255;
+            _banTurnTimeLeft = 0f;
             _banPool = new DraftRolePool();
         }
 
@@ -196,6 +228,8 @@ namespace DraftModeTOUM.DraftTypes
 
             byte pickerId = _banOrder[_currentIndex];
             DraftModePlugin.Logger.LogInfo($"[BanDraft] Ban turn {_currentIndex + 1}/{_banOrder.Count} picker={pickerId} available={available.Count}");
+            _currentPickerId = pickerId;
+            _banTurnTimeLeft = BanPickTimeoutSeconds;
             DraftNetworkHelper.BroadcastBanTurn(pickerId, available, _currentIndex, _banOrder.Count);
         }
 
@@ -208,6 +242,29 @@ namespace DraftModeTOUM.DraftTypes
         private static List<ushort> GetAvailableBanRoleIds()
         {
             return _banPool.RoleIds.Where(id => !_bannedRoleIds.Contains(id)).ToList();
+        }
+
+        public static void Tick(float deltaTime)
+        {
+            if (!AmongUsClient.Instance.AmHost) return;
+            if (!IsBanPhaseActive) return;
+            if (BanPickTimeoutSeconds <= 0f) return;
+            if (_currentIndex >= _banOrder.Count) return;
+
+            _banTurnTimeLeft -= deltaTime;
+            if (_banTurnTimeLeft > 0f) return;
+
+            var available = GetAvailableBanRoleIds();
+            if (available.Count == 0)
+            {
+                EndBanPhaseHost();
+                return;
+            }
+
+            var pickId = available[UnityEngine.Random.Range(0, available.Count)];
+            DraftModePlugin.Logger.LogInfo($"[BanDraft] Auto-picking roleId={pickId} for picker={_currentPickerId}");
+            _banTurnTimeLeft = 0f;
+            HandleBanPickHost(_currentPickerId, pickId);
         }
     }
 }

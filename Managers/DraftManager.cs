@@ -523,6 +523,8 @@ namespace DraftModeTOUM.Managers
 
         public static void Tick(float deltaTime)
         {
+            BanDraftType.Tick(deltaTime);
+
             
             
             if (!IsDraftActive || !AmongUsClient.Instance.AmHost || !TurnTimerRunning) return;
@@ -1233,4 +1235,3 @@ namespace DraftModeTOUM.Managers
         }
     }
 }
-
