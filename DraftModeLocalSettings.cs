@@ -17,7 +17,7 @@ public sealed class DraftModeLocalSettings(ConfigFile config) : LocalSettingsTab
 
     public override LocalSettingTabAppearance TabAppearance => new()
     {
-        TabIcon = TouAssets.TouMiraIcon
+        TabIcon = TouRoleIcons.Traitor
     };
 
     
