@@ -99,22 +99,26 @@ namespace DraftModeTOUM.Managers
         
         public static List<DraftRoleCard> BuildCards(List<ushort> roleIds)
         {
+            return BuildCards(roleIds, DraftManager.ShowRandomOption);
+        }
+
+        public static List<DraftRoleCard> BuildCards(List<ushort> roleIds, bool includeRandom)
+        {
             var cards = new List<DraftRoleCard>();
             for (int i = 0; i < roleIds.Count; i++)
             {
                 ushort id   = roleIds[i];
                 var    role = ResolveRole(id);
 
-                
-                string displayName = role?.NiceName          ?? $"Role {id}";
-                string team        = GetTeamLabel(role)       ?? "Unknown";
+                string displayName = role?.NiceName ?? $"Role {id}";
+                string team        = GetTeamLabel(role) ?? "Unknown";
                 Sprite icon        = GetRoleIcon(role);
                 Color  color       = GetRoleColor(role);
 
                 cards.Add(new DraftRoleCard(displayName, team, icon, color, i));
             }
 
-            if (DraftManager.ShowRandomOption)
+            if (includeRandom)
                 cards.Add(new DraftRoleCard(
                     "Random", "Random",
                     TouRoleIcons.RandomAny.LoadAsset(),
