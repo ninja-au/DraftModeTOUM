@@ -319,6 +319,13 @@ namespace DraftModeTOUM.DraftTypes
         {
             if (!IsTeamModeActive) return;
 
+            _colorRefreshTimer += deltaTime;
+            if (_colorRefreshTimer >= 0.5f)
+            {
+                _colorRefreshTimer = 0f;
+                ApplyTeamColorsLocal();
+            }
+
             if (_roundState == TeamRoundState.Prep)
             {
                 _prepTimer = Mathf.Max(0f, _prepTimer - deltaTime);
