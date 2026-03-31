@@ -4,7 +4,7 @@ using Reactor.Utilities.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace DraftModeTOUM.DraftTypes
+namespace DraftModeTOUM.DraftTypes 
 {
     [RegisterInIl2Cpp]
     public sealed class TeamCaptainRoundOverlay : MonoBehaviour

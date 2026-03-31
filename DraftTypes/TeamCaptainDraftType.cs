@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DraftModeTOUM.Managers;
@@ -262,6 +262,7 @@ namespace DraftModeTOUM.DraftTypes
 
         public static void ResetState()
         {
+            ResetTeamColorsLocal();
             IsTeamModeActive = false;
             _captains.Clear();
             _pickOrder.Clear();
@@ -412,23 +413,13 @@ namespace DraftModeTOUM.DraftTypes
             if (!force && _rolesAssigned) return;
             if (!IsTeamModeActive && !_pendingMatchStart) return;
 
-            ushort roleId;
-            try
-            {
-                roleId = RoleId.Get<GunslingerRole>();
-            }
-            catch
-            {
-                return;
-            }
-
             var players = PlayerControl.AllPlayerControls.ToArray();
             foreach (var p in players)
             {
                 if (p == null || p.Data == null || p.Data.Disconnected) continue;
                 try
                 {
-                    p.RpcSetRole((RoleTypes)roleId, false);
+                    p.RpcSetRole(RoleTypes.Crewmate, false);
                 }
                 catch
                 {
@@ -835,6 +826,20 @@ namespace DraftModeTOUM.DraftTypes
             }
         }
 
+        private static void ResetTeamColorsLocal()
+        {
+            var players = PlayerControl.AllPlayerControls.ToArray();
+            foreach (var p in players)
+            {
+                if (p == null || p.cosmetics == null) continue;
+                try
+                {
+                    p.cosmetics.nameText.color = Color.white;
+                }
+                catch { }
+            }
+        }
+
         private static string FormatSeconds(float seconds)
         {
             int s = Mathf.Max(0, Mathf.RoundToInt(seconds));
@@ -879,3 +884,7 @@ namespace DraftModeTOUM.DraftTypes
         }
     }
 }
+
+
+
+
