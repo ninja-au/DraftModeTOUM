@@ -43,8 +43,6 @@ namespace DraftModeTOUM
                 ClassInjector.RegisterTypeInIl2Cpp<DraftRecapOverlay>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftTypes.BanDraftOverlay>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftTypes.BanDraftScreenController>();
-                ClassInjector.RegisterTypeInIl2Cpp<DraftTypes.TeamCaptainPickOverlay>();
-                ClassInjector.RegisterTypeInIl2Cpp<DraftTypes.TeamCaptainRoundOverlay>();
                 LoggingSystem.Debug("Draft UI Components registered.");
             }
             catch (System.Exception ex)
@@ -149,9 +147,6 @@ namespace DraftModeTOUM
             DraftScreenController.Hide();
             DraftUiManager.CloseAll();
             DraftRecapOverlay.Hide();
-            DraftTypes.TeamCaptainPickOverlay.Hide();
-            DraftTypes.TeamCaptainRoundOverlay.Hide();
-            DraftTypes.TeamCaptainDraftType.ResetState();
             bool draftStillInProgress = DraftManager.IsDraftActive;
             DraftManager.Reset(cancelledBeforeCompletion: draftStillInProgress);
 
@@ -194,7 +189,6 @@ namespace DraftModeTOUM
             DraftScreenController.Hide();
             DraftStatusOverlay.SetState(OverlayState.Hidden);
             DraftRecapOverlay.Hide();
-            DraftTypes.TeamCaptainDraftType.OnShipStart();
         }
     }
 
@@ -219,9 +213,6 @@ namespace DraftModeTOUM
             DraftScreenController.Hide();
             DraftUiManager.CloseAll();
             DraftRecapOverlay.Hide();
-            DraftTypes.TeamCaptainPickOverlay.Hide();
-            DraftTypes.TeamCaptainRoundOverlay.Hide();
-            DraftTypes.TeamCaptainDraftType.ResetState();
             DraftManager.Reset(cancelledBeforeCompletion: true);
             DraftStatusOverlay.ClearHudReferences();
 
