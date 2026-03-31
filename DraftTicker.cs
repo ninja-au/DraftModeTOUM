@@ -28,7 +28,6 @@ namespace DraftModeTOUM
         private void Update()
         {
             DraftManager.Tick(Time.deltaTime);
-            DraftTypes.TeamCaptainDraftType.Tick(Time.deltaTime);
         }
     }
 }
