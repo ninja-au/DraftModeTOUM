@@ -4,6 +4,9 @@ using System.Linq;
 using DraftModeTOUM.Managers;
 using DraftModeTOUM.Patches;
 using MiraAPI.GameOptions;
+using MiraAPI.Roles;
+using DraftModeTOUM.Roles;
+using AmongUs.GameOptions;
 using UnityEngine;
 
 namespace DraftModeTOUM.DraftTypes
@@ -52,6 +55,8 @@ namespace DraftModeTOUM.DraftTypes
         private static float _roundEndTimer = 0f;
         private const float RoundEndDelaySeconds = 6f;
         private static bool _pendingMatchStart = false;
+        private static bool _rolesAssigned = false;
+        private static float _colorRefreshTimer = 0f;
 
         private static readonly Dictionary<byte, int> _teamScores = new();
         private static readonly Dictionary<byte, int> _teamRoundScores = new();
@@ -185,6 +190,7 @@ namespace DraftModeTOUM.DraftTypes
             AddToTeam(pickedPlayerId, teamId);
             _availablePlayers.Remove(pickedPlayerId);
             TeamCaptainPickOverlay.UpdateTeams(_teamMembers, _availablePlayers);
+            ApplyTeamColorsLocal();
         }
 
         public static void HandleTeamPickStartLocal(List<byte> captains, Dictionary<byte, List<byte>> teams, List<byte> available)
@@ -200,6 +206,7 @@ namespace DraftModeTOUM.DraftTypes
             _availablePlayers.AddRange(available);
             IsTeamModeActive = true;
             TeamCaptainPickOverlay.Show(_captains, _teamMembers, _availablePlayers);
+            ApplyTeamColorsLocal();
         }
 
         private static void AdvanceSnake()
@@ -268,6 +275,8 @@ namespace DraftModeTOUM.DraftTypes
             _prepTimer = 0f;
             _roundEndTimer = 0f;
             _pendingMatchStart = false;
+            _rolesAssigned = false;
+            _colorRefreshTimer = 0f;
             _teamScores.Clear();
             _teamRoundScores.Clear();
             _lastTaskCompleteCounts.Clear();
@@ -286,6 +295,24 @@ namespace DraftModeTOUM.DraftTypes
                 4 => new Color(0.7f, 0.3f, 1f),
                 _ => Color.white
             };
+        }
+
+        public static string GetTeamName(byte teamId)
+        {
+            return teamId switch
+            {
+                0 => "White",
+                1 => "Blue",
+                2 => "Green",
+                3 => "Red",
+                4 => "Purple",
+                _ => "White"
+            };
+        }
+
+        public static string GetTeamLabel(byte teamId)
+        {
+            return $"Team {GetTeamName(teamId)}";
         }
 
         public static void Tick(float deltaTime)
@@ -369,8 +396,41 @@ namespace DraftModeTOUM.DraftTypes
         public static void OnShipStart()
         {
             if (!AmongUsClient.Instance.AmHost) return;
+            AssignTeamRolesHost();
             if (_pendingMatchStart)
                 BeginMatchHost();
+        }
+
+        private static void AssignTeamRolesHost()
+        {
+            if (_rolesAssigned) return;
+            if (!IsTeamModeActive && !_pendingMatchStart) return;
+
+            ushort roleId;
+            try
+            {
+                roleId = RoleId.Get<GunslingerRole>();
+            }
+            catch
+            {
+                return;
+            }
+
+            var players = PlayerControl.AllPlayerControls.ToArray();
+            foreach (var p in players)
+            {
+                if (p == null || p.Data == null || p.Data.Disconnected) continue;
+                try
+                {
+                    p.RpcSetRole((RoleTypes)roleId, false);
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+
+            _rolesAssigned = true;
         }
 
         private static void StartRoundHost()

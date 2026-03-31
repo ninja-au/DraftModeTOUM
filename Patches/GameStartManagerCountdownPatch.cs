@@ -64,7 +64,10 @@ namespace DraftModeTOUM.Patches
             if (DraftManager.SkipCountdown) return true;
             if (DraftManager.IsDraftActive) return true;
             if (DraftTypes.TeamCaptainDraftType.IsTeamModeActive) return true;
-            if (!OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft) return true;
+            var draftEnabled = OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft;
+            var teamModeSelected =
+                OptionGroupSingleton<DraftTypeOptions>.Instance.DraftType == DraftTypeMode.TeamCaptainBR;
+            if (!draftEnabled && !teamModeSelected) return true;
 
             DraftModePlugin.Logger.LogInfo("[DraftIntercept] BeginGame intercepted — starting draft.");
 

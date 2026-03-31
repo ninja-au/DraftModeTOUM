@@ -102,13 +102,14 @@ namespace DraftModeTOUM.DraftTypes
 
         private void BuildUI()
         {
-            if (_canvas != null) return;
+            if (_canvas != null && _canvas.gameObject != null) return;
 
             var canvasGo = new GameObject("TeamCaptainCanvas");
             DontDestroyOnLoad(canvasGo);
             _canvas = canvasGo.AddComponent<Canvas>();
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = 210;
+            canvasGo.layer = LayerMask.NameToLayer("UI");
             canvasGo.AddComponent<GraphicRaycaster>();
             var scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -122,6 +123,7 @@ namespace DraftModeTOUM.DraftTypes
             _root.pivot = new Vector2(0.5f, 0.5f);
             _root.sizeDelta = new Vector2(1600f, 900f);
             _root.anchoredPosition = Vector2.zero;
+            rootGo.layer = LayerMask.NameToLayer("UI");
 
             _title = MakeText(_root, "Title", "TEAM CAPTAIN BATTLE ROYALE", 44, new Color(1f, 0.85f, 0.1f), new Vector2(0f, 390f), true);
             _turnText = MakeText(_root, "TurnText", "", 28, Color.white, new Vector2(0f, 340f), true);
