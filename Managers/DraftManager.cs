@@ -218,7 +218,6 @@ namespace DraftModeTOUM.Managers
                 BanDraftType.StartBanPhaseHost();
                 return;
             }
-
             StartDraftInternal();
         }
 

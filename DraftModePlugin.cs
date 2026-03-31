@@ -6,6 +6,7 @@ using HarmonyLib;
 using Il2CppInterop.Runtime.Injection;
 using DraftModeTOUM.Managers;
 using DraftModeTOUM.Patches;
+using DraftModeTOUM.DraftTypes;
 using MiraAPI.PluginLoading;
 using Reactor.Networking;
 using Reactor.Networking.Attributes;

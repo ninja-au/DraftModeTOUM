@@ -63,7 +63,8 @@ namespace DraftModeTOUM.Patches
             if (!AmongUsClient.Instance.AmHost) return true;
             if (DraftManager.SkipCountdown) return true;
             if (DraftManager.IsDraftActive) return true;
-            if (!OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft) return true;
+            var draftEnabled = OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft;
+            if (!draftEnabled) return true;
 
             DraftModePlugin.Logger.LogInfo("[DraftIntercept] BeginGame intercepted — starting draft.");
 

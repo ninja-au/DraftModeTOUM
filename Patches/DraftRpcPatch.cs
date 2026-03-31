@@ -22,7 +22,8 @@ namespace DraftModeTOUM.Patches
         BanStart     = 231,
         BanTurn      = 232,
         BanPick      = 233,
-        BanEnd       = 234
+        BanEnd       = 234,
+        
     }
 
     [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.HandleRpc))]
@@ -173,7 +174,6 @@ namespace DraftModeTOUM.Patches
                 case DraftRpc.BanEnd:
                     BanDraftType.EndBanPhaseLocal();
                     return false;
-
                 default:
                     return true;
             }
