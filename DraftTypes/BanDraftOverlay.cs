@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Reactor.Utilities.Attributes;
-using TMPro;
+using TownOfUs.Utilities;
 using UnityEngine;
+using UnityEngine.UI;
 using DraftModeTOUM.Managers;
 
 namespace DraftModeTOUM.DraftTypes
@@ -12,23 +13,29 @@ namespace DraftModeTOUM.DraftTypes
     {
         private static BanDraftOverlay _instance;
 
-        private GameObject _root;
-        private GameObject _bgOverlay;
-        private TextMeshPro _title;
+        private Canvas _canvas;
+        private RectTransform _root;
+        private Image _bgOverlay;
+        private Text _title;
         private readonly List<BanEntry> _entries = new();
         private readonly Dictionary<byte, BanEntry> _entryByPlayer = new();
         private byte _currentPickerId = 255;
         private bool _showBannedRoles = true;
         private bool _anonymousUsers = false;
 
+        private bool _pendingShow = false;
+        private List<byte> _pendingOrder = new();
+
+
         public BanDraftOverlay(System.IntPtr ptr) : base(ptr) { }
 
         private sealed class BanEntry
         {
             public byte PlayerId;
-            public TextMeshPro NameText;
-            public TextMeshPro StatusText;
-            public Vector3 CardAnchor;
+            public Text NameText;
+            public Text StatusText;
+            public GameObject RoleCard;
+            public Vector2 CardAnchor;
         }
 
         public static void Show(List<byte> order, bool showBannedRoles, bool anonymousUsers)
@@ -36,14 +43,21 @@ namespace DraftModeTOUM.DraftTypes
             EnsureExists();
             _instance._showBannedRoles = showBannedRoles;
             _instance._anonymousUsers = anonymousUsers;
-            _instance.BuildList(order);
-            _instance.SetVisible(true);
+            _instance._pendingOrder = order != null ? new List<byte>(order) : new List<byte>();
+            _instance._pendingShow = true;
+            _instance.TryBuildAndShow();
         }
 
         public static void Hide()
         {
             if (_instance == null) return;
             _instance.SetVisible(false);
+        }
+
+        public static void SetVisibleForLocal(bool visible)
+        {
+            if (_instance == null) return;
+            _instance.SetVisible(visible);
         }
 
         public static void SetCurrentPicker(byte pickerId)
@@ -85,75 +99,79 @@ namespace DraftModeTOUM.DraftTypes
             if (_instance == this) _instance = null;
         }
 
+        private void Update()
+        {
+            if (_pendingShow)
+            {
+                TryBuildAndShow();
+            }
+        }
+
+        private void TryBuildAndShow()
+        {
+            if (_canvas == null || _root == null) BuildUI();
+            if (_canvas == null || _root == null) return;
+            _pendingShow = false;
+            BuildList(_pendingOrder);
+            SetVisible(true);
+        }
+
         private void SetVisible(bool visible)
         {
-            if (_root != null) _root.SetActive(visible);
-            if (_bgOverlay != null) _bgOverlay.SetActive(visible);
+            if (_canvas != null) _canvas.gameObject.SetActive(visible);
         }
 
         private void BuildUI()
         {
-            if (HudManager.Instance == null) return;
+            if (_canvas != null) return;
 
-            var taskText = HudManager.Instance.TaskPanel != null ? HudManager.Instance.TaskPanel.taskText : null;
-            var font = taskText != null ? taskText.font : null;
-            var fontMat = taskText != null ? taskText.fontMaterial : null;
-            if (font == null)
-            {
-                try { font = TMP_Settings.defaultFontAsset; } catch { }
-            }
+            var canvasGo = new GameObject("BanDraftCanvas");
+            DontDestroyOnLoad(canvasGo);
+            _canvas = canvasGo.AddComponent<Canvas>();
+            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            _canvas.sortingOrder = 200;
+            canvasGo.AddComponent<GraphicRaycaster>();
+            var scaler = canvasGo.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
 
-            _bgOverlay = new GameObject("BanDraftBg");
-            _bgOverlay.transform.SetParent(HudManager.Instance.transform, false);
-            _bgOverlay.transform.localPosition = new Vector3(0f, 0f, 1f);
+            var bgGo = new GameObject("BanDraftBg");
+            bgGo.transform.SetParent(canvasGo.transform, false);
+            _bgOverlay = bgGo.AddComponent<Image>();
+            _bgOverlay.color = new Color(0f, 0f, 0f, 0.85f);
+            var bgRt = bgGo.GetComponent<RectTransform>();
+            bgRt.anchorMin = Vector2.zero;
+            bgRt.anchorMax = Vector2.one;
+            bgRt.offsetMin = Vector2.zero;
+            bgRt.offsetMax = Vector2.zero;
 
-            var bgSr = _bgOverlay.AddComponent<SpriteRenderer>();
-            bgSr.sprite = MakeWhiteSprite();
-            bgSr.color = new Color(0f, 0f, 0f, 0.85f);
-            bgSr.sortingLayerName = "UI";
-            bgSr.sortingOrder = 48;
+            var rootGo = new GameObject("BanDraftRoot");
+            rootGo.transform.SetParent(canvasGo.transform, false);
+            _root = rootGo.AddComponent<RectTransform>();
+            _root.anchorMin = new Vector2(0.5f, 0.5f);
+            _root.anchorMax = new Vector2(0.5f, 0.5f);
+            _root.pivot = new Vector2(0.5f, 0.5f);
+            _root.anchoredPosition = new Vector2(0f, 60f);
+            _root.sizeDelta = new Vector2(900f, 700f);
 
-            var cam = Camera.main;
-            float camH = cam != null ? cam.orthographicSize * 2f : 6f;
-            float camW = camH * ((float)Screen.width / Screen.height);
-            _bgOverlay.transform.localScale = new Vector3(camW, camH, 1f);
-            _bgOverlay.SetActive(false);
-
-            _root = new GameObject("BanDraftRoot");
-            _root.transform.SetParent(HudManager.Instance.transform, false);
-            _root.transform.localPosition = new Vector3(0f, 0.6f, -20f);
-
-            _title = MakeText(_root, "BanDraftTitle", font, fontMat,
-                "BAN PHASE", 3.4f, new Color(1f, 0.85f, 0.1f),
-                new Vector3(0f, 2.4f, 0f), bold: true);
-
-            _root.SetActive(false);
+            _title = MakeText(_root, "BanDraftTitle", "BAN PHASE", 46, new Color(1f, 0.85f, 0.1f), new Vector2(0f, 300f), true);
         }
 
         private void BuildList(List<byte> order)
         {
-            if (HudManager.Instance == null) return;
-            if (_root == null) BuildUI();
             if (_root == null) return;
 
             foreach (var e in _entries)
             {
                 if (e.NameText != null) Destroy(e.NameText.gameObject);
                 if (e.StatusText != null) Destroy(e.StatusText.gameObject);
+                if (e.RoleCard != null) Destroy(e.RoleCard);
             }
             _entries.Clear();
             _entryByPlayer.Clear();
 
-            var taskText = HudManager.Instance.TaskPanel != null ? HudManager.Instance.TaskPanel.taskText : null;
-            var font = taskText != null ? taskText.font : null;
-            var fontMat = taskText != null ? taskText.fontMaterial : null;
-            if (font == null)
-            {
-                try { font = TMP_Settings.defaultFontAsset; } catch { }
-            }
-
-            float startY = 1.6f;
-            float stepY = 1.15f;
+            float startY = 180f;
+            float stepY = 140f;
 
             for (int i = 0; i < order.Count; i++)
             {
@@ -161,19 +179,16 @@ namespace DraftModeTOUM.DraftTypes
                 float y = startY - i * stepY;
 
                 string name = GetDisplayName(pid, i);
-                var nameText = MakeText(_root, $"BanName_{i}", font, fontMat,
-                    name, 2.2f, Color.white, new Vector3(0f, y, 0f), bold: true);
-
-                var statusText = MakeText(_root, $"BanStatus_{i}", font, fontMat,
-                    "Choosing...", 1.6f, new Color(0.85f, 0.85f, 0.85f),
-                    new Vector3(0f, y - 0.45f, 0f), bold: false);
+                var nameText = MakeText(_root, $"BanName_{i}", name, 32, Color.white, new Vector2(0f, y), true);
+                var statusText = MakeText(_root, $"BanStatus_{i}", "Choosing...", 24, new Color(0.85f, 0.85f, 0.85f), new Vector2(0f, y - 40f), false);
 
                 var entry = new BanEntry
                 {
                     PlayerId = pid,
                     NameText = nameText,
                     StatusText = statusText,
-                    CardAnchor = new Vector3(0f, y - 0.9f, 0f)
+                    RoleCard = null,
+                    CardAnchor = new Vector2(0f, y - 95f)
                 };
 
                 _entries.Add(entry);
@@ -198,50 +213,52 @@ namespace DraftModeTOUM.DraftTypes
         {
             if (!_entryByPlayer.TryGetValue(pickerId, out var entry)) return;
             if (entry.StatusText != null)
+                entry.StatusText.text = showHidden ? "Banned" : string.Empty;
+
+            if (entry.RoleCard != null)
             {
-                if (showHidden || !_showBannedRoles)
-                {
-                    entry.StatusText.text = "Banned";
-                }
-                else
-                {
-                    var role = DraftUiManager.ResolveRole(roleId);
-                    entry.StatusText.text = role?.NiceName ?? $"Role {roleId}";
-                }
+                Destroy(entry.RoleCard);
+                entry.RoleCard = null;
             }
+
+            if (!_showBannedRoles || showHidden) { UpdateHighlight(); return; }
+
+            var role = DraftUiManager.ResolveRole(roleId);
+            string roleName = role?.NiceName ?? $"Role {roleId}";
+            string alignment = DraftUiManager.GetTeamLabel(role);
+            if (entry.StatusText != null)
+                entry.StatusText.text = $"Banned: {roleName} ({alignment})";
+            entry.RoleCard = null;
             UpdateHighlight();
         }
 
         private string GetDisplayName(byte pid, int index)
         {
-            if (_anonymousUsers) return $"User {index + 1}";
+            if (_anonymousUsers) return $"Anonymous {index + 1}";
             var player = PlayerControl.AllPlayerControls.ToArray().FirstOrDefault(p => p != null && p.PlayerId == pid);
             return player != null ? player.Data.PlayerName : "Unknown";
         }
 
-        private static TextMeshPro MakeText(
-            GameObject parent, string name,
-            TMP_FontAsset font, Material fontMat,
-            string text, float fontSize, Color color,
-            Vector3 offset, bool bold)
+        private static Text MakeText(Transform parent, string name, string text, int fontSize, Color color, Vector2 anchoredPos, bool bold)
         {
             var go = new GameObject(name);
-            go.transform.SetParent(parent.transform, false);
-            go.transform.localPosition = offset;
+            go.transform.SetParent(parent, false);
+            var rt = go.AddComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(800f, 60f);
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = anchoredPos;
 
-            var tmp = go.AddComponent<TextMeshPro>();
-            if (font != null) tmp.font = font;
-            if (fontMat != null) tmp.fontMaterial = fontMat;
-            tmp.fontSize = fontSize;
-            tmp.color = color;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontStyle = bold ? FontStyles.Bold : FontStyles.Normal;
-            tmp.enableWordWrapping = false;
-            tmp.text = text;
-
-            var r = go.GetComponent<Renderer>();
-            if (r != null) { r.sortingLayerName = "UI"; r.sortingOrder = 50; }
-            return tmp;
+            var t = go.AddComponent<Text>();
+            t.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            t.text = text;
+            t.fontSize = fontSize;
+            t.color = color;
+            t.alignment = TextAnchor.MiddleCenter;
+            t.supportRichText = true;
+            if (bold) t.fontStyle = FontStyle.Bold;
+            return t;
         }
 
         private static Color GetTeamColor(string teamName)
@@ -254,17 +271,6 @@ namespace DraftModeTOUM.DraftTypes
             return Color.white;
         }
 
-        private static Sprite _white;
-        private static Sprite MakeWhiteSprite()
-        {
-            if (_white != null) return _white;
-            var tex = new Texture2D(4, 4, TextureFormat.RGBA32, false);
-            var px = new Color[16];
-            for (int i = 0; i < 16; i++) px[i] = Color.white;
-            tex.SetPixels(px);
-            tex.Apply();
-            _white = Sprite.Create(tex, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4f);
-            return _white;
-        }
+        
     }
 }

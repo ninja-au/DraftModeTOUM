@@ -123,9 +123,15 @@ namespace DraftModeTOUM.DraftTypes
 
             bool isPicker = PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.PlayerId == pickerId;
             if (isPicker)
+            {
+                BanDraftOverlay.SetVisibleForLocal(false);
                 BanDraftScreenController.Show(availableRoleIds, true);
+            }
             else
+            {
+                BanDraftOverlay.SetVisibleForLocal(true);
                 BanDraftScreenController.Hide();
+            }
         }
 
         public static void HandleBanPickHost(byte pickerId, ushort roleId)

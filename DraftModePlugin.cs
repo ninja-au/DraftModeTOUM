@@ -209,6 +209,12 @@ namespace DraftModeTOUM
         [HarmonyPostfix]
         public static void Postfix(AmongUsClient __instance)
         {
+            DraftScreenController.Hide();
+            DraftUiManager.CloseAll();
+            DraftRecapOverlay.Hide();
+            DraftManager.Reset(cancelledBeforeCompletion: true);
+            DraftStatusOverlay.ClearHudReferences();
+
             DraftDashboardReporter.EnsureExists();
             DraftModePlugin.Logger.LogInfo("[DraftModePlugin] DashboardReporter ensured on game join.");
 

@@ -118,6 +118,7 @@ namespace DraftModeTOUM
         private void BuildUI()
         {
             if (HudManager.Instance == null) return;
+            if (HudManager.Instance.TaskPanel == null || HudManager.Instance.TaskPanel.taskText == null) return;
 
             var font    = HudManager.Instance.TaskPanel.taskText.font;
             var fontMat = HudManager.Instance.TaskPanel.taskText.fontMaterial;
