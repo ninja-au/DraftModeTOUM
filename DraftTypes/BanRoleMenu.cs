@@ -123,9 +123,11 @@ public sealed class BanRoleMenu(IntPtr cppPtr) : Minigame(cppPtr)
 
         var available = new HashSet<ushort>(roleIds ?? new List<ushort>());
 
-        var roles = TownOfUs.Utilities.MiscUtils.AllRoles
-            .Where(r => r != null)
-            .Select(r => (role: r, id: (ushort)r.Role))
+        var enabledPool = DraftModeTOUM.Managers.RolePoolBuilder.BuildPool();
+        var roles = enabledPool.RoleIds
+            .Select(id => (id, role: DraftModeTOUM.Managers.DraftUiManager.ResolveRole(id)))
+            .Where(x => x.role != null)
+            .Select(x => (x.id, role: x.role!))
             .OrderBy(x => x.role.NiceName)
             .ToList();
 
