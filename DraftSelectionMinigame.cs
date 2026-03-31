@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using DraftModeTOUM.Managers;
@@ -296,7 +296,7 @@ namespace DraftModeTOUM
             rollover.OutColor  = color;
             rollover.OverColor = Color.white;
             roleText.color     = color;
-            teamText.fontSizeMax = Mathf.Lerp(TeamNameFontSize, TeamNameFontSize * 0.5f, Mathf.InverseLerp(3f, 9f, totalCards));
+            teamText.fontSizeMax = 3.8f;
             teamText.color       = GetTeamColor(teamName);
 
             return passiveButton;
