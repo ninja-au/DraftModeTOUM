@@ -218,12 +218,6 @@ namespace DraftModeTOUM.Managers
                 BanDraftType.StartBanPhaseHost();
                 return;
             }
-            if (DraftTypes.TeamCaptainDraftType.IsEnabled)
-            {
-                DraftTypes.TeamCaptainDraftType.StartTeamModeHost();
-                return;
-            }
-
             StartDraftInternal();
         }
 
@@ -478,7 +472,6 @@ namespace DraftModeTOUM.Managers
                 UpCommandRequests.Clear();
 
             BanDraftType.Reset();
-            DraftTypes.TeamCaptainDraftType.ResetState();
         }
 
         
