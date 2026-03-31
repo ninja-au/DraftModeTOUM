@@ -2,7 +2,7 @@
   <img src="screenshots/logo-banner.png" alt="DraftModeTOUM" width="700"/>
 </p>
 
-A [BepInEx](https://github.com/BepInEx/BepInEx) mod for **Among Us** running [Town of Us: Mira Edition (TOUM)](https://github.com/AU-Avengers/TOU-Mira) that adds a **Draft Mode** — players take turns picking their roles before the game begins instead of having them assigned randomly.
+A [BepInEx](https://github.com/BepInEx/BepInEx) mod for **Among Us** running [Town of Us: Mira (TOU:M)](https://github.com/AU-Avengers/TOU-Mira) that adds a **Draft Mode** — players take turns picking their roles before the game begins instead of having them assigned randomly.
 
 ---
 
@@ -11,13 +11,13 @@ A [BepInEx](https://github.com/BepInEx/BepInEx) mod for **Among Us** running [To
 - Among Us (compatible version with TOUM)
 - [BepInEx IL2CPP](https://github.com/BepInEx/BepInEx)
 - [Reactor](https://github.com/NuclearPowered/Reactor)
-- [Town of Us: Mira Edition](https://github.com/AU-Avengers/TOU-Mira)
+- [Town of Us: Mira](https://github.com/AU-Avengers/TOU-Mira)
 
 ---
 
 ## Installation
 
-1. Make sure BepInEx, Reactor, and TOUM are already installed and working.
+1. Make sure BepInEx, Reactor, and TOU:M are already installed and working.
 2. Download the latest `DraftModeTOUM.dll` from [Releases](../../releases).
 3. Drop it into your `BepInEx/plugins/` folder.
 4. Launch Among Us — the mod will load automatically.
