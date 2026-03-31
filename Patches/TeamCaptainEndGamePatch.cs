@@ -1,31 +1,56 @@
-using System.Collections.Generic;
-using System.Reflection;
 using DraftModeTOUM.DraftTypes;
 using HarmonyLib;
 
 namespace DraftModeTOUM.Patches
 {
-    [HarmonyPatch]
-    public static class TeamCaptainPreventEndGamePatch
+    [HarmonyPatch(typeof(LogicGameFlowNormal), nameof(LogicGameFlowNormal.CheckEndCriteria))]
+    public static class TeamCaptainCheckEndCriteriaPatch
     {
-        [HarmonyTargetMethods]
-        public static IEnumerable<MethodBase> TargetMethods()
+        [HarmonyPrefix]
+        [HarmonyPriority(Priority.First)]
+        public static bool Prefix()
         {
-            var methods = new List<MethodBase>();
-            var shipCheck = AccessTools.Method(typeof(ShipStatus), "CheckEndGame");
-            if (shipCheck != null) methods.Add(shipCheck);
+            if (!TeamCaptainDraftType.HandleExternalEndGameRequest())
+            {
+                return true;
+            }
 
-            var clientCheck = AccessTools.Method(typeof(AmongUsClient), "CheckForGameEnd") ??
-                              AccessTools.Method(typeof(AmongUsClient), "CheckForEndGame");
-            if (clientCheck != null) methods.Add(clientCheck);
-
-            return methods;
+            return false;
         }
+    }
 
-        public static bool Prefix(ref bool __result)
+    [HarmonyPatch(typeof(LogicGameFlowNormal), nameof(LogicGameFlowNormal.IsGameOverDueToDeath))]
+    public static class TeamCaptainIsGameOverDueToDeathPatch
+    {
+        [HarmonyPostfix]
+        public static void Postfix(ref bool __result)
         {
-            if (!TeamCaptainDraftType.IsTeamModeActive) return true;
-            __result = false;
+            if (TeamCaptainDraftType.HandleExternalEndGameRequest())
+            {
+                __result = false;
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.RpcEndGame))]
+    public static class TeamCaptainRpcEndGamePatch
+    {
+        [HarmonyPrefix]
+        [HarmonyPriority(Priority.First)]
+        public static bool Prefix()
+        {
+            if (!TeamCaptainDraftType.HandleExternalEndGameRequest()) return true;
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(EndGameManager), nameof(EndGameManager.Start))]
+    public static class TeamCaptainEndGameManagerStartPatch
+    {
+        [HarmonyPrefix]
+        public static bool Prefix()
+        {
+            if (!TeamCaptainDraftType.HandleExternalEndGameRequest()) return true;
             return false;
         }
     }

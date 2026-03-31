@@ -93,11 +93,13 @@ namespace DraftModeTOUM.DraftTypes
             ApplySettings();
             ResetState();
             DraftTicker.EnsureExists();
+            IsTeamModeActive = true;
 
             var players = GetLobbyPlayers();
             if (players.Count < 2)
             {
                 DraftModePlugin.Logger.LogWarning("[TeamCaptain] Not enough players.");
+                IsTeamModeActive = false;
                 return;
             }
 
@@ -319,12 +321,7 @@ namespace DraftModeTOUM.DraftTypes
         {
             if (!IsTeamModeActive) return;
 
-            _colorRefreshTimer += deltaTime;
-            if (_colorRefreshTimer >= 0.5f)
-            {
-                _colorRefreshTimer = 0f;
-                ApplyTeamColorsLocal();
-            }
+            ApplyTeamColorsLocal();
 
             if (_roundState == TeamRoundState.Prep)
             {
@@ -385,6 +382,7 @@ namespace DraftModeTOUM.DraftTypes
             if (!_pendingMatchStart) return;
             _pendingMatchStart = false;
             IsTeamModeActive = true;
+            EnsureAllPlayersAssignedToTeams();
             _teamScores.Clear();
             _teamRoundScores.Clear();
             foreach (var cap in _captains)
@@ -397,6 +395,7 @@ namespace DraftModeTOUM.DraftTypes
             DraftNetworkHelper.BroadcastTeamModeStart(_playerToTeam, _teamScores, _teamRoundScores, 0, Rounds, PrepTimeSeconds, RoundMinutes);
             TeamCaptainRoundOverlay.Show();
             ApplyTeamColorsLocal();
+            AssignTeamRolesHost(force: true);
             StartRoundHost();
         }
 
@@ -408,9 +407,9 @@ namespace DraftModeTOUM.DraftTypes
                 BeginMatchHost();
         }
 
-        private static void AssignTeamRolesHost()
+        private static void AssignTeamRolesHost(bool force = false)
         {
-            if (_rolesAssigned) return;
+            if (!force && _rolesAssigned) return;
             if (!IsTeamModeActive && !_pendingMatchStart) return;
 
             ushort roleId;
@@ -447,6 +446,7 @@ namespace DraftModeTOUM.DraftTypes
             ResetTasksForAll();
             ReviveAndTeleportAll();
             ApplyTeamColorsLocal();
+            AssignTeamRolesHost(force: true);
 
             _prepTimer = PrepTimeSeconds;
             _roundTimer = RoundMinutes * 60f;
@@ -586,6 +586,16 @@ namespace DraftModeTOUM.DraftTypes
             TeamCaptainRoundOverlay.Show();
             TeamCaptainRoundOverlay.SetScores(_teamScores, _teamRoundScores);
             TeamCaptainRoundOverlay.SetStatus(winnerTeam == 255 ? "MATCH TIED" : $"TEAM {winnerTeam + 1} WINS MATCH");
+        }
+
+        public static bool HandleExternalEndGameRequest()
+        {
+            var teamModeSelected =
+                OptionGroupSingleton<DraftTypeOptions>.Instance.DraftType == DraftTypeMode.TeamCaptainBR;
+            if (!IsTeamModeActive && !_pendingMatchStart && !teamModeSelected) return false;
+            if (Rounds <= 1) return false;
+
+            return true;
         }
 
         public static void HandleTeamScoreUpdateLocal(Dictionary<byte, int> totalScores, Dictionary<byte, int> roundScores)
@@ -781,6 +791,27 @@ namespace DraftModeTOUM.DraftTypes
                     alive.Add(team);
             }
             return alive.ToList();
+        }
+
+        private static void EnsureAllPlayersAssignedToTeams()
+        {
+            var players = PlayerControl.AllPlayerControls.ToArray()
+                .Where(p => p != null && p.Data != null && !p.Data.Disconnected)
+                .OrderBy(p => p.PlayerId)
+                .ToList();
+
+            if (_captains.Count == 0 && players.Count > 0)
+            {
+                _captains.AddRange(players.Take(Mathf.Max(1, Mathf.Min(CaptainsCount, players.Count))).Select(p => p.PlayerId));
+            }
+
+            for (int i = 0; i < players.Count; i++)
+            {
+                var p = players[i];
+                if (_playerToTeam.ContainsKey(p.PlayerId)) continue;
+                byte teamId = (byte)(i % Mathf.Max(1, _captains.Count));
+                AddToTeam(p.PlayerId, teamId);
+            }
         }
 
         public static bool TryGetTeam(byte playerId, out byte teamId)

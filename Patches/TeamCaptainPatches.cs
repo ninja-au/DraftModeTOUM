@@ -37,17 +37,47 @@ namespace DraftModeTOUM.Patches
     [HarmonyPatch]
     public static class TeamCaptainKillButtonPatch
     {
-        private static System.Reflection.MethodBase TargetMethod()
+        private static System.Collections.Generic.IEnumerable<System.Reflection.MethodBase> TargetMethods()
         {
-            return AccessTools.Method(typeof(PlayerControl), "CanUseKillButton") ??
-                   AccessTools.Method(typeof(PlayerControl), "CanKill") ??
-                   AccessTools.Method(typeof(PlayerControl), "CanUseKill");
+            var list = new System.Collections.Generic.List<System.Reflection.MethodBase>();
+            var m = AccessTools.Method(typeof(PlayerControl), "CanUseKillButton");
+            if (m != null) list.Add(m);
+            m = AccessTools.Method(typeof(PlayerControl), "CanKill");
+            if (m != null) list.Add(m);
+            m = AccessTools.Method(typeof(PlayerControl), "CanUseKill");
+            if (m != null) list.Add(m);
+            return list;
         }
 
         public static void Postfix(PlayerControl __instance, ref bool __result)
         {
             if (!TeamCaptainDraftType.IsTeamModeActive) return;
             __result = true;
+        }
+    }
+
+    [HarmonyPatch(typeof(HudManager), nameof(HudManager.Update))]
+    public static class TeamCaptainHudKillButtonPatch
+    {
+        public static void Postfix(HudManager __instance)
+        {
+            if (!TeamCaptainDraftType.IsTeamModeActive) return;
+            if (__instance == null) return;
+            try
+            {
+                var killButton = __instance.KillButton;
+                if (killButton == null) return;
+                killButton.gameObject.SetActive(true);
+                var setEnabled = AccessTools.Method(killButton.GetType(), "SetEnabled");
+                if (setEnabled != null)
+                {
+                    setEnabled.Invoke(killButton, new object[] { true });
+                }
+            }
+            catch
+            {
+                // ignore
+            }
         }
     }
 }

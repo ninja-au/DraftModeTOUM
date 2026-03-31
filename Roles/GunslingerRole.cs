@@ -12,7 +12,7 @@ public sealed class GunslingerRole(IntPtr cppPtr) : CrewmateRole(cppPtr), ICusto
     public string RoleDescription => "Eliminate the enemy team.";
     public string RoleLongDescription => "Work with your team to win the round.";
     public Color RoleColor => new Color(1f, 0.9f, 0.2f);
-    public ModdedRoleTeams Team => ModdedRoleTeams.Crewmate;
+    public ModdedRoleTeams Team => ModdedRoleTeams.Custom;
 
     public CustomRoleConfiguration Configuration
     {
