@@ -1,6 +1,7 @@
-﻿using AmongUs.GameOptions;
+using AmongUs.GameOptions;
+using Reactor.Utilities.Attributes;
+using TownOfUs.Networking;
 using DraftModeTOUM;
-using DraftModeTOUM.DraftTypes;
 using DraftModeTOUM.Patches;
 using MiraAPI.Utilities;
 using HarmonyLib;
@@ -206,27 +207,6 @@ namespace DraftModeTOUM.Managers
 
             DraftTicker.EnsureExists();
 
-            try
-            {
-                var dt = MiraAPI.GameOptions.OptionGroupSingleton<DraftTypeOptions>.Instance?.DraftType;
-                DraftModePlugin.Logger.LogInfo($"[DraftManager] DraftType={dt} BanDraftEnabled={DraftTypes.BanDraftType.IsEnabled}");
-            }
-            catch { }
-
-            if (BanDraftType.IsEnabled)
-            {
-                BanDraftType.StartBanPhaseHost();
-                return;
-            }
-            StartDraftInternal();
-        }
-
-        internal static void StartDraftInternal()
-        {
-            if (!AmongUsClient.Instance.AmHost) return;
-            if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Joined) return;
-            if (DraftTypes.BanDraftType.IsBanPhaseActive) return;
-
             string  savedForcedName   = _forcedRoleName;
             byte    savedForcedTarget = _forcedRoleTargetId;
 
@@ -247,7 +227,6 @@ namespace DraftModeTOUM.Managers
                 .Where(p => p != null && !p.Data.Disconnected).ToList();
 
             _pool = RolePoolBuilder.BuildPool();
-            BanDraftType.ApplyBansToPool(_pool);
             if (_pool.RoleIds.Count == 0) return;
 
             int totalSlots    = players.Count;
@@ -470,8 +449,6 @@ namespace DraftModeTOUM.Managers
 
             if (cancelledBeforeCompletion)
                 UpCommandRequests.Clear();
-
-            BanDraftType.Reset();
         }
 
         
@@ -522,8 +499,6 @@ namespace DraftModeTOUM.Managers
 
         public static void Tick(float deltaTime)
         {
-            BanDraftType.Tick(deltaTime);
-
             
             
             if (!IsDraftActive || !AmongUsClient.Instance.AmHost || !TurnTimerRunning) return;
@@ -1125,10 +1100,10 @@ namespace DraftModeTOUM.Managers
 
         
 
-        public static void SendChatLocal(string msg)
+        
+        public static void RpcSendMessageToAll(string title, string message)
         {
-            if (HudManager.Instance?.Chat)
-                HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, msg);
+            MiscUtils.AddFakeChat(PlayerControl.LocalPlayer.Data, title, message, true, false, true);
         }
 
         private static void ApplyLocalSettings()
@@ -1234,3 +1209,7 @@ namespace DraftModeTOUM.Managers
         }
     }
 }
+
+
+
+
