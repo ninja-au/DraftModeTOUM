@@ -1,4 +1,4 @@
-﻿using DraftModeTOUM.Managers;
+using DraftModeTOUM.Managers;
 using HarmonyLib;
 using MiraAPI.GameOptions;
 using Reactor.Utilities;
@@ -63,8 +63,7 @@ namespace DraftModeTOUM.Patches
             if (!AmongUsClient.Instance.AmHost) return true;
             if (DraftManager.SkipCountdown) return true;
             if (DraftManager.IsDraftActive) return true;
-            var draftEnabled = OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft;
-            if (!draftEnabled) return true;
+            if (!OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft) return true;
 
             DraftModePlugin.Logger.LogInfo("[DraftIntercept] BeginGame intercepted — starting draft.");
 
@@ -83,8 +82,9 @@ namespace DraftModeTOUM.Patches
             
             
             gsm.countDownTimer = 10f;
-
-            DraftManager.SendChatLocal("<color=#FFD700>Draft starting! Wait for your turn to pick a role.</color>");
+            
+            
+            DraftManager.RpcSendMessageToAll("System", "Draft starting! Wait for your turn to pick a role.");
             DraftManager.StartDraft();
         }
     }
