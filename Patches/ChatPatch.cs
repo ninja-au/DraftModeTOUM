@@ -3,6 +3,8 @@ using HarmonyLib;
 using MiraAPI.GameOptions;
 using System.Linq;
 using UnityEngine;
+using TownOfUs.Utilities;
+
 
 namespace DraftModeTOUM.Patches
 {
@@ -17,64 +19,16 @@ namespace DraftModeTOUM.Patches
             if (string.IsNullOrEmpty(msg)) return true;
 
             if (msg.StartsWith("/draft", System.StringComparison.OrdinalIgnoreCase)
-                && !msg.StartsWith("/draftrecap", System.StringComparison.OrdinalIgnoreCase)
                 && !msg.StartsWith("/draftend", System.StringComparison.OrdinalIgnoreCase))
             {
-                if (!AmongUsClient.Instance.AmHost)
-                {
-                    DraftManager.SendChatLocal("<color=red>Only host can start draft.</color>");
-                }
-                else if (DraftManager.IsDraftActive)
-                {
-                    DraftManager.SendChatLocal("<color=red>Draft already active.</color>");
-                }
-                else if (!OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft)
-                {
-                    DraftManager.SendChatLocal("<color=red>Draft Mode is disabled in settings.</color>");
-                }
-                else
-                {
-                    DraftManager.StartDraft();
-                }
+                MiscUtils.AddFakeChat(PlayerControl.LocalPlayer.Data, "<color=#8BFDFD>System</color>", "/draft no longer exists, make sure you have Draft Mode enabled in the Settings and click the Start Button to start the Draft");
                 ClearChat(__instance);
                 return false;
             }
 
             if (msg.StartsWith("/draftend", System.StringComparison.OrdinalIgnoreCase))
             {
-                if (!AmongUsClient.Instance.AmHost)
-                {
-                    DraftManager.SendChatLocal("<color=red>Only host can end the draft.</color>");
-                }
-                else if (!DraftManager.IsDraftActive)
-                {
-                    DraftManager.SendChatLocal("<color=red>No draft is currently active.</color>");
-                }
-                else
-                {
-                    DraftNetworkHelper.BroadcastCancelDraft();
-                    DraftManager.Reset(cancelledBeforeCompletion: true);
-                    DraftManager.SendChatLocal("<color=#FFD700>Draft has been cancelled by the host.</color>");
-                    DraftNetworkHelper.BroadcastDraftEnd();
-                }
-                ClearChat(__instance);
-                return false;
-            }
-
-            if (msg.StartsWith("/draftrecap", System.StringComparison.OrdinalIgnoreCase))
-            {
-                if (!AmongUsClient.Instance.AmHost)
-                {
-                    DraftManager.SendChatLocal("<color=red>Only host can change draft settings.</color>");
-                }
-                else
-                {
-                    var opts = OptionGroupSingleton<DraftModeOptions>.Instance;
-                    opts.ShowRecap = !opts.ShowRecap;
-                    DraftManager.ShowRecap = opts.ShowRecap;
-                    string status = DraftManager.ShowRecap ? "<color=green>ON</color>" : "<color=red>OFF</color>";
-                    DraftManager.SendChatLocal($"<color=#FFD700>Draft recap is now: {status}</color>");
-                }
+                MiscUtils.AddFakeChat(PlayerControl.LocalPlayer.Data, "<color=#8BFDFD>System</color>", "/draftend no longer exists, use the cancel button in the bottom left to end Draft Mode");
                 ClearChat(__instance);
                 return false;
             }
