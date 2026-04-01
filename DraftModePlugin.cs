@@ -1,4 +1,6 @@
 using BepInEx;
+using Reactor.Utilities.Attributes;
+using TownOfUs.Networking;
 using BepInEx.Logging;
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
@@ -6,7 +8,6 @@ using HarmonyLib;
 using Il2CppInterop.Runtime.Injection;
 using DraftModeTOUM.Managers;
 using DraftModeTOUM.Patches;
-using DraftModeTOUM.DraftTypes;
 using MiraAPI.PluginLoading;
 using Reactor.Networking;
 using Reactor.Networking.Attributes;
@@ -39,10 +40,10 @@ namespace DraftModeTOUM
                 ClassInjector.RegisterTypeInIl2Cpp<DraftTicker>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftDashboardReporter>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftScreenController>();
+                ClassInjector.RegisterTypeInIl2Cpp<DraftCircleMinigame>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftStatusOverlay>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftRecapOverlay>();
-                ClassInjector.RegisterTypeInIl2Cpp<DraftTypes.BanDraftOverlay>();
-                ClassInjector.RegisterTypeInIl2Cpp<DraftTypes.BanDraftScreenController>();
+                // DraftCancelButton is a plain static class — no IL2CPP registration needed.
                 LoggingSystem.Debug("Draft UI Components registered.");
             }
             catch (System.Exception ex)
@@ -135,7 +136,7 @@ namespace DraftModeTOUM
     {
         public const string PLUGIN_GUID = "com.draftmodetoun.mod";
         public const string PLUGIN_NAME = "DraftModeTOUM";
-        public const string PLUGIN_VERSION = "1.0.7";
+        public const string PLUGIN_VERSION = "1.0.6-bugfix";
     }
 
     [HarmonyPatch(typeof(AmongUsClient), nameof(AmongUsClient.OnDisconnected))]
@@ -147,6 +148,7 @@ namespace DraftModeTOUM
             DraftScreenController.Hide();
             DraftUiManager.CloseAll();
             DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
             bool draftStillInProgress = DraftManager.IsDraftActive;
             DraftManager.Reset(cancelledBeforeCompletion: draftStillInProgress);
 
@@ -164,6 +166,7 @@ namespace DraftModeTOUM
         {
             DraftScreenController.Hide();
             DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
             DraftModePlugin.Logger.LogInfo("[DraftModePlugin] Game starting...");
         }
     }
@@ -177,6 +180,7 @@ namespace DraftModeTOUM
             DraftScreenController.Hide();
             DraftStatusOverlay.SetState(OverlayState.Hidden);
             DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
         }
     }
 
@@ -189,6 +193,7 @@ namespace DraftModeTOUM
             DraftScreenController.Hide();
             DraftStatusOverlay.SetState(OverlayState.Hidden);
             DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
         }
     }
 
@@ -210,12 +215,6 @@ namespace DraftModeTOUM
         [HarmonyPostfix]
         public static void Postfix(AmongUsClient __instance)
         {
-            DraftScreenController.Hide();
-            DraftUiManager.CloseAll();
-            DraftRecapOverlay.Hide();
-            DraftManager.Reset(cancelledBeforeCompletion: true);
-            DraftStatusOverlay.ClearHudReferences();
-
             DraftDashboardReporter.EnsureExists();
             DraftModePlugin.Logger.LogInfo("[DraftModePlugin] DashboardReporter ensured on game join.");
 
