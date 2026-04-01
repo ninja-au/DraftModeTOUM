@@ -35,11 +35,6 @@ namespace DraftModeTOUM.Managers
 
         public static List<DraftRoleCard> BuildCards(List<ushort> roleIds)
         {
-            return BuildCards(roleIds, DraftManager.ShowRandomOption);
-        }
-
-        public static List<DraftRoleCard> BuildCards(List<ushort> roleIds, bool includeRandom)
-        {
             var cards = new List<DraftRoleCard>();
             for (int i = 0; i < roleIds.Count; i++)
             {
@@ -54,7 +49,7 @@ namespace DraftModeTOUM.Managers
                 cards.Add(new DraftRoleCard(displayName, team, icon, color, i));
             }
 
-            if (includeRandom)
+            if (DraftManager.ShowRandomOption)
                 cards.Add(new DraftRoleCard(
                     "Random", "Random",
                     TouRoleIcons.RandomAny.LoadAsset(),
