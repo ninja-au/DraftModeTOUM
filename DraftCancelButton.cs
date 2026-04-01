@@ -9,31 +9,7 @@ using UnityEngine.Events;
 
 namespace DraftModeTOUM
 {
-    /// <summary>
-    /// Host-only cancel button that sits to the left of the UseButton during the draft.
-    ///
-    /// Positioning strategy
-    /// ─────────────────────
-    /// Among Us ActionButtons (UseButton, KillButton, etc.) are GameObjects that live
-    /// as direct children of HudManager.  The ActionButton wrapper itself has a child
-    /// called "button" (or similar) that is the actual visible circle, but for position
-    /// purposes the ActionButton's own transform.localPosition IS the screen position in
-    /// HUD local-space — it's just that the HUD root has a non-trivial scale applied to
-    /// it by Among Us for different resolutions.
-    ///
-    /// The reliable approach is:
-    ///   1. Parent our root GO to the SAME parent as UseButton (HudManager.transform).
-    ///   2. Copy UseButton's localPosition exactly.
-    ///   3. Shift left in LOCAL space by the button diameter — which we measure from
-    ///      UseButton's own child SpriteRenderer bounds so it scales correctly.
-    ///
-    /// Sprite
-    /// ───────
-    /// We scan every loaded Sprite and log ALL of their names on the first call so you
-    /// can identify the exact quit sprite name in your AU version from the BepInEx log.
-    /// Known names across versions: "ExitGame", "QuitButton", "LeaveGame", "Quit",
-    /// "btn_exit", "ic_close", "Close", "ic_quit".
-    /// </summary>
+
     public static class DraftCancelButton
     {
         // ── state ──────────────────────────────────────────────────────────────────
@@ -172,7 +148,7 @@ namespace DraftModeTOUM
             DraftModePlugin.Logger.LogInfo("[DraftCancelButton] Cancel clicked by host.");
             DraftNetworkHelper.BroadcastCancelDraft();
             DraftManager.Reset(cancelledBeforeCompletion: true);
-            DraftManager.SendChatLocal("<color=#FFD700>Draft has been cancelled by the host.</color>");
+            DraftManager.RpcSendMessageToAll("System", "Draft has been cancelled by the host.");
             DraftNetworkHelper.BroadcastDraftEnd();
             Hide();
         }
