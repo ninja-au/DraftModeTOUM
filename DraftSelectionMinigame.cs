@@ -319,6 +319,7 @@ namespace DraftModeTOUM
                 if (child == null) continue;
                 int animIndex = useGrid ? (i % cols) : i;
                 yield return CoAnimateCardIn(child, animIndex);
+                if (child == null) continue;
                 try { Coroutines.Start(MiscUtils.BetterBloop(child, finalSize: cardScale, duration: 0.22f, intensity: 0.16f)); }
                 catch (Exception bex) { DraftModePlugin.Logger.LogWarning($"[DraftScreen] BetterBloop failed: {bex.Message}"); }
                 yield return new WaitForSeconds(0.08f);
@@ -330,12 +331,14 @@ namespace DraftModeTOUM
 
         private static IEnumerator CoAnimateCardIn(Transform card, int currentCard)
         {
+            if (card == null) yield break;
             
             float randY = (currentCard * currentCard * 0.5f - currentCard) * 0.05f
                           + UnityEngine.Random.Range(-0.08f, 0f);
             float randZ = -10f + currentCard * 5f + UnityEngine.Random.Range(-1.5f, 0f);
             if (currentCard == 0) { randY = 0f; randZ = -2f; }
 
+            if (card == null) yield break;
             card.localRotation = Quaternion.Euler(0f, 0f, -randZ);
             card.localPosition = new Vector3(card.localPosition.x, card.localPosition.y - 5f, card.localPosition.z);
             card.localRotation = Quaternion.Euler(0f, 0f, 14f);
@@ -344,6 +347,7 @@ namespace DraftModeTOUM
 
             for (float timer = 0f; timer < 0.35f; timer += Time.deltaTime)
             {
+                if (card == null) yield break;
                 float t = timer / 0.35f;
                 card.localPosition = new Vector3(
                     card.localPosition.x,
@@ -354,6 +358,7 @@ namespace DraftModeTOUM
                 yield return null;
             }
 
+            if (card == null) yield break;
             card.localPosition = new Vector3(card.localPosition.x, randY, card.localPosition.z);
             card.localRotation = Quaternion.Euler(0f, 0f, -randZ);
         }
