@@ -56,7 +56,7 @@ namespace DraftModeTOUM.Managers
         private static int _neutralKillingsDrafted = 0;
         private static int _neutralPassivesDrafted = 0;
 
-        internal static bool SkipCountdown { get; private set; } = false;
+        public static bool SkipCountdown { get; internal set; } = false;
 
         public static List<int>                           TurnOrder      { get; private set; } = new();
         private static Dictionary<int, PlayerDraftState> _slotMap       = new();
