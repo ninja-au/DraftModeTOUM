@@ -79,9 +79,8 @@ namespace DraftModeTOUM.Managers
         private static string  _forcedRoleName     = null;
         private static ushort? _forcedRoleId       = null;
         private static byte    _forcedRoleTargetId  = 255;
+        private static readonly HashSet<byte> _forcedRolePlayers = new();
 
-        
-        
         private static bool _endSequenceRunning = false;
 
         public static void SetForcedDraftRole(string roleName, byte targetPlayerId)
@@ -89,6 +88,7 @@ namespace DraftModeTOUM.Managers
             _forcedRoleName     = roleName;
             _forcedRoleId       = null;
             _forcedRoleTargetId = targetPlayerId;
+            _forcedRolePlayers.Add(targetPlayerId);
             LoggingSystem.Debug($"[DraftManager] Forced draft card set: '{roleName}' for player {targetPlayerId}");
             
             
@@ -446,6 +446,7 @@ namespace DraftModeTOUM.Managers
             _forcedRoleName     = null;
             _forcedRoleId       = null;
             _forcedRoleTargetId = 255;
+            _forcedRolePlayers.Clear();
 
             if (cancelledBeforeCompletion)
                 UpCommandRequests.Clear();
@@ -888,21 +889,22 @@ namespace DraftModeTOUM.Managers
 
         private static void FinalisePickForState(PlayerDraftState state, ushort roleId)
         {
-            
-            
             if (!IsDraftActive || state == null) return;
+            bool isForced = _forcedRolePlayers.Contains(state.PlayerId);
 
             if (IsUniqueRole(roleId) && _roundChosenRoles.Contains(roleId))
             {
                 roleId = PickFullRandom(_roundChosenRoles);
             }
-            if (!IsRoleAvailable(roleId))
+            if (!isForced && !IsRoleAvailable(roleId))
             {
                 roleId = PickFullRandom(_roundChosenRoles);
             }
 
             if (IsUniqueRole(roleId))
                 _roundChosenRoles.Add(roleId);
+
+            _forcedRolePlayers.Remove(state.PlayerId);
 
             state.ChosenRoleId = roleId;
             state.HasPicked    = true;
