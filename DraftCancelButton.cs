@@ -12,7 +12,6 @@ namespace DraftModeTOUM
 
     public static class DraftCancelButton
     {
-        // ── state ──────────────────────────────────────────────────────────────────
         private static GameObject     _root;
         private static SpriteRenderer _iconSr;
         private static SpriteRenderer _bgSr;
@@ -20,13 +19,11 @@ namespace DraftModeTOUM
         private static PassiveButton  _btn;
 
         private static Sprite _quitSprite;
-        private static bool   _spriteLogged; // log sprite names once
+        private static bool   _spriteLogged;
 
         private const float ButtonScale   = 0.55f;
         private const float LabelYOffset  = -0.52f;
         private const float LabelFontSize = 3.5f;
-
-        // ── public API ─────────────────────────────────────────────────────────────
 
         public static void Show()
         {
@@ -52,8 +49,6 @@ namespace DraftModeTOUM
             _bgSr   = null;
         }
 
-        // ── construction ──────────────────────────────────────────────────────────
-
         private static void Build()
         {
             var hud = HudManager.Instance;
@@ -66,29 +61,21 @@ namespace DraftModeTOUM
                 return;
             }
 
-            // ── measure UseButton to find its local position and diameter ─────────
-            // The ActionButton's own localPosition in HUD space IS the anchor point.
-            // To get the diameter we look at the background SpriteRenderer on the
-            // button's inner child and read its bounds in LOCAL space.
             Vector3 useBtnLocalPos = useBtn.transform.localPosition;
 
-            // Diameter: walk children of UseButton for its background circle SR
             float buttonDiameter = MeasureButtonDiameter(useBtn.gameObject);
             DraftModePlugin.Logger.LogInfo(
                 $"[DraftCancelButton] UseButton localPos={useBtnLocalPos}, measured diameter={buttonDiameter}");
 
-            // Place our button one diameter to the LEFT of UseButton in HUD local space
             Vector3 ourLocalPos = new Vector3(
                 useBtnLocalPos.x - buttonDiameter,
                 useBtnLocalPos.y,
                 useBtnLocalPos.z);
 
-            // ── root — sibling of UseButton under HudManager ─────────────────────
             _root = new GameObject("DraftCancelButtonRoot");
-            _root.transform.SetParent(useBtn.transform.parent, false); // same parent
+            _root.transform.SetParent(useBtn.transform.parent, false);
             _root.transform.localPosition = ourLocalPos;
-            _root.transform.localScale    = Vector3.zero; // CoPopIn animates this
-            // ── icon ──────────────────────────────────────────────────────────────
+            _root.transform.localScale    = Vector3.zero;
             var iconGo = new GameObject("Icon");
             iconGo.transform.SetParent(_root.transform, false);
             iconGo.transform.localPosition = Vector3.zero;
@@ -100,7 +87,6 @@ namespace DraftModeTOUM
             _iconSr.sortingLayerName = "UI";
             _iconSr.sortingOrder     = 51;
 
-            // ── label ─────────────────────────────────────────────────────────────
             var labelGo = new GameObject("Label");
             labelGo.transform.SetParent(_root.transform, false);
             labelGo.transform.localPosition = new Vector3(0f, LabelYOffset, 0f);
@@ -112,12 +98,9 @@ namespace DraftModeTOUM
             var lr = labelGo.GetComponent<Renderer>();
             if (lr != null) { lr.sortingLayerName = "UI"; lr.sortingOrder = 52; }
 
-            // ── collider ──────────────────────────────────────────────────────────
-            // Radius scaled to match the visual button size (diameter / 2 / ButtonScale)
             var col    = _root.AddComponent<CircleCollider2D>();
             col.radius = (buttonDiameter * 0.5f) / ButtonScale;
 
-            // ── PassiveButton ─────────────────────────────────────────────────────
             _btn             = _root.AddComponent<PassiveButton>();
             _btn.Colliders   = new Collider2D[] { col };
             _btn.OnClick     = new UnityEngine.UI.Button.ButtonClickedEvent();
@@ -138,8 +121,6 @@ namespace DraftModeTOUM
             }));
         }
 
-        // ── click handler ─────────────────────────────────────────────────────────
-
         private static void OnClicked()
         {
             if (!AmongUsClient.Instance.AmHost) return;
@@ -153,13 +134,6 @@ namespace DraftModeTOUM
             Hide();
         }
 
-        // ── positioning helpers ───────────────────────────────────────────────────
-
-        /// <summary>
-        /// Measures the visual diameter of an AU ActionButton by reading the largest
-        /// SpriteRenderer child's bounds in local space.  Falls back to 1.3 units
-        /// (empirically correct for AU's default ability button size at scale 0.55).
-        /// </summary>
         private static float MeasureButtonDiameter(GameObject actionButtonGo)
         {
             float best = 0f;
@@ -168,17 +142,12 @@ namespace DraftModeTOUM
                 foreach (var sr in actionButtonGo.GetComponentsInChildren<SpriteRenderer>(true))
                 {
                     if (sr == null || sr.sprite == null) continue;
-                    // bounds.size is in WORLD space; we want the size in the parent's
-                    // local space so divide by the HUD scale on that axis.
                     float w = sr.bounds.size.x;
                     if (w > best) best = w;
                 }
             }
             catch { }
 
-            // If we got something reasonable use it; otherwise fall back.
-            // A standard AU action button at scale 0.55 has world-space width ~1.05–1.15.
-            // We add a small gap (10 %) so the buttons don't touch.
             if (best > 0.3f && best < 5f)
                 return best * 1.1f;
 
@@ -186,7 +155,6 @@ namespace DraftModeTOUM
             return 1.3f;
         }
 
-        // ── font helpers ───────────────────────────────────────────────────────────
 
         private static void CopyAuFont(TextMeshPro tmp, HudManager hud)
         {
@@ -196,7 +164,6 @@ namespace DraftModeTOUM
             tmp.characterSpacing = -.2f;
             tmp.enableWordWrapping = false;
 
-            // UseButton label (best match — exact AU button typeface + SDF outline)
             try
             {
                 var src = hud.UseButton?.GetComponentInChildren<TextMeshPro>(true);
@@ -210,7 +177,6 @@ namespace DraftModeTOUM
             }
             catch { }
 
-            // KillButton label (same family)
             try
             {
                 var src = hud.KillButton?.GetComponentInChildren<TextMeshPro>(true);
@@ -247,29 +213,20 @@ namespace DraftModeTOUM
                 return MakeXSprite();
             }
 
-            // Log every unique sprite name once so the correct name is visible in the log
             if (!_spriteLogged)
             {
                 _spriteLogged = true;
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine("[DraftCancelButton] All loaded sprite names:");
-                foreach (var sp in all)
-                    if (sp != null) sb.AppendLine($"  '{sp.name}'");
-                DraftModePlugin.Logger.LogInfo(sb.ToString());
             }
 
-            // Pass 1 — exact known names (extend this list based on your log output)
             foreach (var sp in all)
             {
                 if (sp == null) continue;
                 switch (sp.name)
                 {
-                    // v2022+ lobby/end-screen names (most common):
                     case "ExitGame":
                     case "QuitButton":
                     case "LeaveGame":
                     case "Quit":
-                    // older / variant names:
                     case "btn_exit":
                     case "ic_close":
                     case "Close":
@@ -282,7 +239,6 @@ namespace DraftModeTOUM
                 }
             }
 
-            // Pass 2 — substring match
             foreach (var sp in all)
             {
                 if (sp == null) continue;
@@ -303,8 +259,6 @@ namespace DraftModeTOUM
             return _quitSprite;
         }
 
-        // ── procedural sprite factories ───────────────────────────────────────────
-
 private static Sprite MakeXSprite()
 {
     const int S   = 80;
@@ -312,12 +266,9 @@ private static Sprite MakeXSprite()
     var tex = new Texture2D(S, S, TextureFormat.RGBA32, false);
     var px  = new Color32[S * S];
 
-    // 1. Set the initial background to Red instead of transparent black
-    // Using (200, 30, 30) for a nice "Among Us" style dark red
     for (int i = 0; i < px.Length; i++) 
         px[i] = new Color32(200, 30, 30, 255); 
 
-    // 2. Draw the white "X" on top
     for (int i = 8; i < S - 8; i++)
     {
         for (int t = -ARM; t <= ARM; t++)
@@ -332,7 +283,6 @@ private static Sprite MakeXSprite()
 
     tex.SetPixels32(px);
     tex.Apply();
-    // Adjusted pixelsPerUnit (S * 0.9f) to ensure it fits the button area
     return Sprite.Create(tex, new Rect(0, 0, S, S), new Vector2(0.5f, 0.5f), S * 0.9f);
 }   
 
@@ -359,18 +309,19 @@ private static Sprite MakeXSprite()
             return Sprite.Create(tex, new Rect(0, 0, S, S), new Vector2(0.5f, 0.5f), S / 1.2f);
         }
 
-        // ── pop-in animation ──────────────────────────────────────────────────────
-
         private static IEnumerator CoPopIn(Transform t)
         {
+            if (t == null) yield break;
             const float dur = 0.20f;
             for (float elapsed = 0f; elapsed < dur; elapsed += Time.deltaTime)
             {
+                if (t == null) yield break;
                 float s = EaseOutBack(elapsed / dur) * ButtonScale;
                 t.localScale = Vector3.one * s;
                 yield return null;
             }
-            t.localScale = Vector3.one * ButtonScale;
+            if (t != null)
+                t.localScale = Vector3.one * ButtonScale;
         }
 
         private static float EaseOutBack(float t)

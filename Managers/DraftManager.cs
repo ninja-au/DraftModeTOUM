@@ -266,7 +266,6 @@ namespace DraftModeTOUM.Managers
 
             DraftStatusOverlay.SetState(OverlayState.Waiting);
             
-            // Play audio cue if set to Draft Start
             var localSettings = MiraAPI.LocalSettings.LocalSettingsTabSingleton<DraftModeLocalSettings>.Instance;
             if (localSettings.AudioCueTiming.Value == AudioTiming.DraftStart)
             {
@@ -547,7 +546,6 @@ namespace DraftModeTOUM.Managers
             _roundReadyPickers.Clear();
             _activeSlots = GetNextActiveSlots();
             
-            // Reserve the forced role slot so it's not offered to others
             if (_forcedRoleId.HasValue && _forcedRoleTargetId != 255)
             {
                 _roundOfferReserved.Add(_forcedRoleId.Value);
@@ -607,18 +605,15 @@ namespace DraftModeTOUM.Managers
             var result = new List<int>();
             int idx = _turnIndex;
 
-            // Skip forced role player - they get their role via UpCommandRequests
             while (idx < TurnOrder.Count)
             {
                 int slot = TurnOrder[idx];
                 var state = GetStateForSlot(slot);
                 if (state == null) { idx++; continue; }
                 
-                // Skip the forced role player entirely
                 if (_forcedRoleId.HasValue && _forcedRoleTargetId != 255 && 
                     state.PlayerId == _forcedRoleTargetId)
                 {
-                    // Mark them as picked so they're skipped
                     state.HasPicked = true;
                     state.IsPickingNow = false;
                     idx++;
@@ -712,7 +707,6 @@ namespace DraftModeTOUM.Managers
             
             if (_forcedRoleId.HasValue && state.PlayerId == _forcedRoleTargetId)
             {
-                // Forced role player is skipped in draft - role assigned via UpCommandRequests
                 return new List<ushort>();
             }
 
@@ -890,15 +884,12 @@ namespace DraftModeTOUM.Managers
             if (!IsDraftActive || state == null) return;
             bool isForced = _forcedRolePlayers.Contains(state.PlayerId);
 
-            // For forced players, ensure they get their requested role if they picked it
             if (isForced && _forcedRoleId.HasValue && state.PlayerId == _forcedRoleTargetId)
             {
-                // If they picked the forced role (by any index), give it to them
                 if (roleId == _forcedRoleId.Value)
                 {
                     roleId = _forcedRoleId.Value;
                 }
-                // Clear global forced role variables after the forced player picks
                 _forcedRoleName = null;
                 _forcedRoleId = null;
                 _forcedRoleTargetId = 255;
@@ -1010,7 +1001,6 @@ namespace DraftModeTOUM.Managers
             PendingRoleAssignments.Clear();
             _appliedPlayers.Clear();
 
-            // Handle forced role player first (they were skipped in draft)
             if (_forcedRoleId.HasValue && _forcedRoleTargetId != 255)
             {
                 PendingRoleAssignments[_forcedRoleTargetId] = (RoleTypes)_forcedRoleId.Value;

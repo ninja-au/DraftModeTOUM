@@ -312,6 +312,7 @@ namespace DraftModeTOUM
             
             for (int i = 0; i < rolesHolder.childCount; i++)
             {
+                if (rolesHolder == null) yield break;
                 Transform card = rolesHolder.GetChild(i);
                 if (card == null) continue;
                 if (card.childCount == 0) continue;
