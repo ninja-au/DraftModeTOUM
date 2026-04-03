@@ -76,13 +76,6 @@ After every player has picked, a **Draft Recap** is shown on screen for all play
 ![Draft Recap](screenshots/recap.png)
 
 The recap can be toggled off so roles stay secret — only the player who picked knows what they got. To toggle it, the host can use the **Show Draft Recap** option in settings
----
-
-## Chat Commands
-
-| Command | Who | Description |
-|---|---|---|
-| `/draftend` | Host only | Cancels the currently active draft |
 
 ---
 
@@ -90,9 +83,9 @@ The recap can be toggled off so roles stay secret — only the player who picked
 
 Each player can toggle whether they hear audio for when the draft starts, and more. Open **Settings → Mira → Draft Mode** to find:
 
-| Setting | Description |
-|---|---|
-| Placeholder | Stuff for the sound |
+| Setting       | Description |
+|---------------|-------------|
+| Audio Setting | • No Sound – Disables all audio.<br>• Sound on Draft Start – Plays a sound when the draft phase begins.<br>• Sound on Turn Start – Plays a sound at the start of each turn. |
 
 ---
 
