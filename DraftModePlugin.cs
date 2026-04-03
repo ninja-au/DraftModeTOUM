@@ -1,4 +1,6 @@
-﻿using BepInEx;
+using BepInEx;
+using Reactor.Utilities.Attributes;
+using TownOfUs.Networking;
 using BepInEx.Logging;
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
@@ -41,6 +43,7 @@ namespace DraftModeTOUM
                 ClassInjector.RegisterTypeInIl2Cpp<DraftCircleMinigame>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftStatusOverlay>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftRecapOverlay>();
+                // DraftCancelButton is a plain static class — no IL2CPP registration needed.
                 LoggingSystem.Debug("Draft UI Components registered.");
             }
             catch (System.Exception ex)
@@ -133,7 +136,7 @@ namespace DraftModeTOUM
     {
         public const string PLUGIN_GUID = "com.draftmodetoun.mod";
         public const string PLUGIN_NAME = "DraftModeTOUM";
-        public const string PLUGIN_VERSION = "1.0.6-bugfix";
+        public const string PLUGIN_VERSION = "1.0.7";
     }
 
     [HarmonyPatch(typeof(AmongUsClient), nameof(AmongUsClient.OnDisconnected))]
@@ -145,11 +148,10 @@ namespace DraftModeTOUM
             DraftScreenController.Hide();
             DraftUiManager.CloseAll();
             DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
             bool draftStillInProgress = DraftManager.IsDraftActive;
             DraftManager.Reset(cancelledBeforeCompletion: draftStillInProgress);
 
-            
-            
             DraftStatusOverlay.ClearHudReferences();
             DraftDashboardReporter.ClearLobbyCode();
             DraftModePlugin.Logger.LogInfo($"[DraftModePlugin] Session cleared on disconnect.");
@@ -164,6 +166,7 @@ namespace DraftModeTOUM
         {
             DraftScreenController.Hide();
             DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
             DraftModePlugin.Logger.LogInfo("[DraftModePlugin] Game starting...");
         }
     }
@@ -177,6 +180,7 @@ namespace DraftModeTOUM
             DraftScreenController.Hide();
             DraftStatusOverlay.SetState(OverlayState.Hidden);
             DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
         }
     }
 
@@ -189,6 +193,7 @@ namespace DraftModeTOUM
             DraftScreenController.Hide();
             DraftStatusOverlay.SetState(OverlayState.Hidden);
             DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
         }
     }
 
@@ -199,7 +204,6 @@ namespace DraftModeTOUM
         public static void Postfix()
         {
             DraftDashboardReporter.EnsureExists();
-            
             DraftStatusOverlay.ClearHudReferences();
             DraftModePlugin.Logger.LogInfo("[DraftModePlugin] DashboardReporter ensured from MainMenu.");
         }
@@ -251,4 +255,3 @@ namespace DraftModeTOUM
         }
     }
 }
-

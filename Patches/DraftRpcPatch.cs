@@ -1,6 +1,7 @@
-﻿using DraftModeTOUM.Managers;
+using DraftModeTOUM.Managers;
 using HarmonyLib;
 using Hazel;
+using AmongUs.GameOptions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -139,7 +140,7 @@ namespace DraftModeTOUM.Patches
                 case DraftRpc.EndDraft:
                     
                     DraftManager.Reset(cancelledBeforeCompletion: true);
-                    DraftManager.SendChatLocal("<color=#FFD700>Draft has been cancelled by the host.</color>");
+                    DraftManager.RpcSendMessageToAll("System", "Draft has been cancelled by the host.");
                     return false;
 
                 default:
@@ -183,6 +184,8 @@ namespace DraftModeTOUM.Patches
             var    roleIds    = new ushort[roleCount];
             for (int i = 0; i < roleCount; i++) roleIds[i] = reader.ReadUInt16();
 
+            DraftModePlugin.Logger.LogInfo($"[DraftRpcPatch] Received turn announcement for player {pickerId}, roles: {string.Join(",", roleIds.Select(r => ((RoleTypes)r).ToString()))}");
+
             DraftManager.SetClientTurn(turnNumber, slot);
             DisplayTurnAnnouncement(slot, pickerId, roleIds);
         }
@@ -197,7 +200,15 @@ namespace DraftModeTOUM.Patches
             byte localId = PlayerControl.LocalPlayer.PlayerId;
             if (localId == pickerId)
             {
+                DraftModePlugin.Logger.LogInfo($"[DraftRpcPatch] Showing picker for local player with roles: {string.Join(",", roleIds.Select(r => ((RoleTypes)r).ToString()))}");
                 DraftUiManager.ShowPicker(roleIds.ToList());
+                
+                // Play audio cue if set to Turn Start (client-side check)
+                var localSettings = MiraAPI.LocalSettings.LocalSettingsTabSingleton<DraftModeLocalSettings>.Instance;
+                if (localSettings.AudioCueTiming.Value == AudioTiming.TurnStart)
+                {
+                    DraftAudio.PlayDraftStartCue();
+                }
             }
             else
             {
@@ -259,6 +270,7 @@ namespace DraftModeTOUM.Patches
 
         public static void SendTurnAnnouncement(int slot, byte playerId, List<ushort> roleIds, int turnNumber)
         {
+            DraftModePlugin.Logger.LogInfo($"[DraftRpcPatch] Sending turn announcement to player {playerId}, roles: {string.Join(",", roleIds.Select(r => ((RoleTypes)r).ToString()))}");
             DraftRpcPatch.HandleAnnounceTurnLocal(slot, playerId, roleIds);
 
             var writer = AmongUsClient.Instance.StartRpcImmediately(
@@ -378,7 +390,7 @@ namespace DraftModeTOUM.Patches
         {
             
             DraftManager.Reset(cancelledBeforeCompletion: true);
-            DraftManager.SendChatLocal("<color=#FFD700>Draft has been cancelled by the host.</color>");
+            DraftManager.RpcSendMessageToAll("System", "Draft has been cancelled by the host.");
 
             
             var writer = AmongUsClient.Instance.StartRpcImmediately(

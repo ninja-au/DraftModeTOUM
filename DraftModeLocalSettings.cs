@@ -1,14 +1,18 @@
-﻿using BepInEx.Configuration;
+using BepInEx.Configuration;
 using MiraAPI.LocalSettings;
-using MiraAPI.LocalSettings.Attributes;
-using MiraAPI.LocalSettings.SettingTypes;
+using MiraAPI.Utilities;
 using TownOfUs.Assets;
+using UnityEngine;
+using MiraAPI.LocalSettings.Attributes;
 
 namespace DraftModeTOUM;
 
-
-
-
+public enum AudioTiming
+{
+    NoSound = 0,
+    DraftStart = 1,
+    TurnStart = 2
+}
 
 public sealed class DraftModeLocalSettings(ConfigFile config) : LocalSettingsTab(config)
 {
@@ -20,20 +24,7 @@ public sealed class DraftModeLocalSettings(ConfigFile config) : LocalSettingsTab
         TabIcon = TouRoleIcons.Traitor
     };
 
-    
-    
-    
-    
-    [LocalToggleSetting]
-    public ConfigEntry<bool> OverrideUiStyle { get; private set; } =
-        config.Bind("DraftLocal", "OverrideUiStyle", false);
-
-    
-    
-    
-    
-    [LocalToggleSetting]
-    public ConfigEntry<bool> UseCircleStyle { get; private set; } =
-        config.Bind("DraftLocal", "UseCircleStyle", false);
+    [LocalEnumSetting]
+    public ConfigEntry<AudioTiming> AudioCueTiming { get; private set; } =
+        config.Bind("Audio", "Cue Timing", AudioTiming.DraftStart, "When to play the draft audio cue sound");
 }
-

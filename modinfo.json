@@ -5,11 +5,10 @@
   "Icon": "DraftModeTOUM.DraftLogo.png",
   "License": "GPLv3",
   "Authors": [
-    "Cinnamonpuma",
     "Ninja-AU",
     "IdkImNeil"
   ],
   "Links": {
-    "Source": "https://github.com/Cinnamonpuma/DraftModeTOUM"
+    "Source": "https://github.com/Ninja-AU/DraftModeTOUM"
   }
 }

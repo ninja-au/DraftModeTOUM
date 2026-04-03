@@ -1,4 +1,4 @@
-﻿using DraftModeTOUM.Managers;
+using DraftModeTOUM.Managers;
 using HarmonyLib;
 using MiraAPI.GameOptions;
 using Reactor.Utilities;
@@ -82,8 +82,9 @@ namespace DraftModeTOUM.Patches
             
             
             gsm.countDownTimer = 10f;
-
-            DraftManager.SendChatLocal("<color=#FFD700>Draft starting! Wait for your turn to pick a role.</color>");
+            
+            
+            DraftManager.RpcSendMessageToAll("System", "Draft starting! Wait for your turn to pick a role.");
             DraftManager.StartDraft();
         }
     }

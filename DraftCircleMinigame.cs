@@ -282,9 +282,13 @@ public sealed class DraftCircleMinigame : Minigame
         if (RolesHolder == null) yield break;
         foreach (var o in RolesHolder.transform)
         {
+            if (RolesHolder == null) yield break;
             var card = o.Cast<Transform>();
             if (card == null) continue;
-            Coroutines.Start(CoPopIn(card.GetChild(0)));
+            Transform child = null;
+            try { child = card.GetChild(0); } catch { continue; }
+            if (child == null) continue;
+            Coroutines.Start(CoPopIn(child));
             yield return new WaitForSeconds(0.01f);
         }
         CurrentCard = -1;
@@ -293,16 +297,19 @@ public sealed class DraftCircleMinigame : Minigame
 
     private static IEnumerator CoPopIn(Transform t)
     {
+        if (t == null) yield break;
         float targetScale = 0.5f;
         float duration = 0.12f;
         t.localScale = Vector3.zero;
         for (float timer = 0f; timer < duration; timer += Time.deltaTime)
         {
+            if (t == null) yield break;
             float scale = Mathf.LerpUnclamped(0f, targetScale, EaseOutBack(timer / duration));
             t.localScale = Vector3.one * scale;
             yield return null;
         }
-        t.localScale = Vector3.one * targetScale;
+        if (t != null)
+            t.localScale = Vector3.one * targetScale;
     }
 
     private static float EaseOutBack(float t)

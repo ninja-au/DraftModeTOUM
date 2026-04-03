@@ -1,4 +1,6 @@
-﻿using AmongUs.GameOptions;
+using AmongUs.GameOptions;
+using Reactor.Utilities.Attributes;
+using TownOfUs.Networking;
 using DraftModeTOUM;
 using DraftModeTOUM.Patches;
 using MiraAPI.Utilities;
@@ -77,9 +79,8 @@ namespace DraftModeTOUM.Managers
         private static string  _forcedRoleName     = null;
         private static ushort? _forcedRoleId       = null;
         private static byte    _forcedRoleTargetId  = 255;
+        private static readonly HashSet<byte> _forcedRolePlayers = new();
 
-        
-        
         private static bool _endSequenceRunning = false;
 
         public static void SetForcedDraftRole(string roleName, byte targetPlayerId)
@@ -87,8 +88,15 @@ namespace DraftModeTOUM.Managers
             _forcedRoleName     = roleName;
             _forcedRoleId       = null;
             _forcedRoleTargetId = targetPlayerId;
-            LoggingSystem.Debug($"[DraftManager] Forced draft card set: '{roleName}' for player {targetPlayerId}");
+            _forcedRolePlayers.Add(targetPlayerId);
             
+            // Queue the role directly via UpCommandRequests to bypass draft
+            var player = PlayerControl.AllPlayerControls.ToArray()
+                .FirstOrDefault(p => p.PlayerId == targetPlayerId);
+            if (player != null)
+            {
+                UpCommandRequests.SetRequest(player.Data.PlayerName, roleName);
+            }
             
             if (IsDraftActive)
             {
@@ -216,9 +224,6 @@ namespace DraftModeTOUM.Managers
                 _forcedRoleName     = savedForcedName;
                 _forcedRoleTargetId = savedForcedTarget;
                 _forcedRoleId       = null; 
-                DraftModePlugin.Logger.LogInfo(
-                    $"[DraftManager] Restored pending forced role '{savedForcedName}' " +
-                    $"for player {savedForcedTarget} after Reset");
             }
 
             var players = PlayerControl.AllPlayerControls.ToArray()
@@ -260,6 +265,13 @@ namespace DraftModeTOUM.Managers
             DraftNetworkHelper.BroadcastSlotNotifications(_pidToSlot);
 
             DraftStatusOverlay.SetState(OverlayState.Waiting);
+            
+            var localSettings = MiraAPI.LocalSettings.LocalSettingsTabSingleton<DraftModeLocalSettings>.Instance;
+            if (localSettings.AudioCueTiming.Value == AudioTiming.DraftStart)
+            {
+                DraftAudio.PlayDraftStartCue();
+            }
+            
             StartRound();
         }
 
@@ -270,20 +282,13 @@ namespace DraftModeTOUM.Managers
             if (string.IsNullOrWhiteSpace(_forcedRoleName)) return;
             _forcedRoleId = null;
 
-            LoggingSystem.Debug(
-                $"[DraftManager] Resolving forced role '{_forcedRoleName}' " +
-                $"for player {_forcedRoleTargetId} (pool has {_pool.RoleIds.Count} roles)");
-
             foreach (var id in _pool.RoleIds)
             {
                 var role = RoleManager.Instance?.GetRole((RoleTypes)id);
                 if (role == null) continue;
-                LoggingSystem.Debug($"[DraftManager]   pool role: '{role.NiceName}' (id={id})");
                 if (string.Equals(role.NiceName, _forcedRoleName, StringComparison.OrdinalIgnoreCase))
                 {
                     _forcedRoleId = id;
-                    LoggingSystem.Debug(
-                        $"[DraftManager] Forced role resolved in pool: '{_forcedRoleName}' -> {id}");
                     return;
                 }
             }
@@ -294,14 +299,9 @@ namespace DraftModeTOUM.Managers
                 if (role != null && string.Equals(role.NiceName, _forcedRoleName, StringComparison.OrdinalIgnoreCase))
                 {
                     _forcedRoleId = (ushort)rt;
-                    LoggingSystem.Debug(
-                        $"[DraftManager] Forced role resolved (outside pool): '{_forcedRoleName}' -> {rt}");
                     return;
                 }
             }
-
-            LoggingSystem.Warning(
-                $"[DraftManager] Could not resolve forced role name: '{_forcedRoleName}'");
         }
 
         
@@ -444,6 +444,7 @@ namespace DraftModeTOUM.Managers
             _forcedRoleName     = null;
             _forcedRoleId       = null;
             _forcedRoleTargetId = 255;
+            _forcedRolePlayers.Clear();
 
             if (cancelledBeforeCompletion)
                 UpCommandRequests.Clear();
@@ -544,11 +545,13 @@ namespace DraftModeTOUM.Managers
             _roundChosenRoles.Clear();
             _roundReadyPickers.Clear();
             _activeSlots = GetNextActiveSlots();
-            if (_forcedRoleId.HasValue && IsUniqueRole(_forcedRoleId.Value))
+            
+            if (_forcedRoleId.HasValue && _forcedRoleTargetId != 255)
             {
                 _roundOfferReserved.Add(_forcedRoleId.Value);
                 _roundChosenRoles.Add(_forcedRoleId.Value);
             }
+            
             BuildRoundFactionAllowList();
 
             if (_activeSlots.Count == 0)
@@ -601,12 +604,28 @@ namespace DraftModeTOUM.Managers
         {
             var result = new List<int>();
             int idx = _turnIndex;
-            while (idx < TurnOrder.Count && result.Count < ConcurrentPickCount)
+
+            while (idx < TurnOrder.Count)
             {
                 int slot = TurnOrder[idx];
                 var state = GetStateForSlot(slot);
-                if (state != null && !state.HasPicked)
+                if (state == null) { idx++; continue; }
+                
+                if (_forcedRoleId.HasValue && _forcedRoleTargetId != 255 && 
+                    state.PlayerId == _forcedRoleTargetId)
+                {
+                    state.HasPicked = true;
+                    state.IsPickingNow = false;
+                    idx++;
+                    continue;
+                }
+                
+                if (!state.HasPicked)
+                {
                     result.Add(slot);
+                    if (result.Count >= ConcurrentPickCount)
+                        break;
+                }
                 idx++;
             }
             return result;
@@ -688,31 +707,7 @@ namespace DraftModeTOUM.Managers
             
             if (_forcedRoleId.HasValue && state.PlayerId == _forcedRoleTargetId)
             {
-                ushort forcedId   = _forcedRoleId.Value;
-                string forcedName = _forcedRoleName ?? forcedId.ToString();
-                _forcedRoleName     = null;
-                _forcedRoleId       = null;
-                _forcedRoleTargetId = 255;
-
-                LoggingSystem.Debug(
-                    $"[DraftManager] Injecting forced card '{forcedName}' for slot {state.SlotNumber}");
-
-                var available2 = GetAvailableIds(effectiveReserved);
-                available2 = FilterAvailableForRound(state, available2);
-                var offered2   = new List<ushort> { forcedId };
-                var fill       = available2.Where(id => id != forcedId).ToList();
-                offered2.AddRange(PickWeightedUnique(fill, Math.Max(0, OfferedRolesCount - 1)));
-                while (offered2.Count < OfferedRolesCount)
-                    offered2.Add((ushort)RoleTypes.Crewmate);
-
-                offered2 = offered2.OrderBy(_ => UnityEngine.Random.value).ToList();
-                int forcedIndex = offered2.IndexOf(forcedId);
-
-                ReserveOffers(reserved, offered2);
-
-                Coroutines.Start(CoAutoPickForced(state.PlayerId, forcedIndex));
-                DraftDashboardReporter.TryConsumeForcedRole();
-                return offered2;
+                return new List<ushort>();
             }
 
             var available = GetAvailableIds(effectiveReserved);
@@ -886,21 +881,33 @@ namespace DraftModeTOUM.Managers
 
         private static void FinalisePickForState(PlayerDraftState state, ushort roleId)
         {
-            
-            
             if (!IsDraftActive || state == null) return;
+            bool isForced = _forcedRolePlayers.Contains(state.PlayerId);
+
+            if (isForced && _forcedRoleId.HasValue && state.PlayerId == _forcedRoleTargetId)
+            {
+                if (roleId == _forcedRoleId.Value)
+                {
+                    roleId = _forcedRoleId.Value;
+                }
+                _forcedRoleName = null;
+                _forcedRoleId = null;
+                _forcedRoleTargetId = 255;
+            }
 
             if (IsUniqueRole(roleId) && _roundChosenRoles.Contains(roleId))
             {
                 roleId = PickFullRandom(_roundChosenRoles);
             }
-            if (!IsRoleAvailable(roleId))
+            if (!isForced && !IsRoleAvailable(roleId))
             {
                 roleId = PickFullRandom(_roundChosenRoles);
             }
 
             if (IsUniqueRole(roleId))
                 _roundChosenRoles.Add(roleId);
+
+            _forcedRolePlayers.Remove(state.PlayerId);
 
             state.ChosenRoleId = roleId;
             state.HasPicked    = true;
@@ -994,10 +1001,17 @@ namespace DraftModeTOUM.Managers
             PendingRoleAssignments.Clear();
             _appliedPlayers.Clear();
 
+            if (_forcedRoleId.HasValue && _forcedRoleTargetId != 255)
+            {
+                PendingRoleAssignments[_forcedRoleTargetId] = (RoleTypes)_forcedRoleId.Value;
+            }
+
             foreach (var state in _slotMap.Values)
             {
                 if (!state.ChosenRoleId.HasValue) continue;
                 if (state.PlayerId >= 200) continue;
+                // Skip forced role player - already added above
+                if (_forcedRoleId.HasValue && state.PlayerId == _forcedRoleTargetId) continue;
                 PendingRoleAssignments[state.PlayerId] = (RoleTypes)state.ChosenRoleId.Value;
                 LoggingSystem.Debug(
                     $"[DraftManager] Queued {(RoleTypes)state.ChosenRoleId.Value} for player {state.PlayerId}");
@@ -1078,7 +1092,6 @@ namespace DraftModeTOUM.Managers
 
             if (PendingRoleAssignments.Count > 0)
             {
-                LoggingSystem.Warning("[DraftManager] Retry loop timed out — falling back to UpCommandRequests");
                 foreach (var kvp in PendingRoleAssignments)
                 {
                     if (_appliedPlayers.Contains(kvp.Key)) continue;
@@ -1087,8 +1100,6 @@ namespace DraftModeTOUM.Managers
                     if (role != null && p != null)
                     {
                         UpCommandRequests.SetRequest(p.Data.PlayerName, role.NiceName);
-                        LoggingSystem.Debug(
-                            $"[DraftManager] UpCommandRequests fallback: {role.NiceName} for {p.Data.PlayerName}");
                     }
                 }
                 PendingRoleAssignments.Clear();
@@ -1098,10 +1109,10 @@ namespace DraftModeTOUM.Managers
 
         
 
-        public static void SendChatLocal(string msg)
+        
+        public static void RpcSendMessageToAll(string title, string message)
         {
-            if (HudManager.Instance?.Chat)
-                HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, msg);
+            MiscUtils.AddFakeChat(PlayerControl.LocalPlayer.Data, title, message, true, false, true);
         }
 
         private static void ApplyLocalSettings()

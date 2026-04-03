@@ -19,8 +19,6 @@ namespace DraftModeTOUM.Managers
                 return;
 
             _pending[playerName] = roleName;
-            DraftModePlugin.Logger.LogInfo(
-                $"[UpCommandRequests] Queued fallback role '{roleName}' for '{playerName}'");
         }
 
         
