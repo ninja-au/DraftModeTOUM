@@ -4,6 +4,13 @@
 
 A [BepInEx](https://github.com/BepInEx/BepInEx) mod for **Among Us** running [Town of Us: Mira (TOU:M)](https://github.com/AU-Avengers/TOU-Mira) that adds a **Draft Mode** — players take turns picking their roles before the game begins instead of having them assigned randomly.
 
+<div align="center">
+  <a href="https://github.com/ninja-au/DraftModeTOUM/releases/"> <img alt="Latest Release" src="https://badgen.net/github/release/ninja-au/DraftModeTOUM?icon=github"></a>
+  <a href="https://github.com/ninja-au/DraftModeTOUM/releases"> <img alt="GitHub Downloads" src="https://img.shields.io/github/downloads/ninja-au/DraftModeTOUM/total"></a>
+  <a href="https://discord.gg/vHdyRs8dfu"> <img alt="Mod Discord" src="https://img.shields.io/discord/1279057211339051079.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2"></a>
+</div>
+<br/>
+
 ---
 
 ## Requirements
@@ -76,13 +83,6 @@ After every player has picked, a **Draft Recap** is shown on screen for all play
 ![Draft Recap](screenshots/recap.png)
 
 The recap can be toggled off so roles stay secret — only the player who picked knows what they got. To toggle it, the host can use the **Show Draft Recap** option in settings
----
-
-## Chat Commands
-
-| Command | Who | Description |
-|---|---|---|
-| `/draftend` | Host only | Cancels the currently active draft |
 
 ---
 
@@ -90,9 +90,9 @@ The recap can be toggled off so roles stay secret — only the player who picked
 
 Each player can toggle whether they hear audio for when the draft starts, and more. Open **Settings → Mira → Draft Mode** to find:
 
-| Setting | Description |
-|---|---|
-| Placeholder | Stuff for the sound |
+| Setting       | Description |
+|---------------|-------------|
+| Audio Setting | • No Sound – Disables all audio.<br>• Sound on Draft Start – Plays a sound when the draft phase begins.<br>• Sound on Turn Start – Plays a sound at the start of each turn. |
 
 ---
 
