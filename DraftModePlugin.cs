@@ -1,4 +1,6 @@
 using BepInEx;
+using Reactor.Utilities.Attributes;
+using TownOfUs.Networking;
 using BepInEx.Logging;
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
@@ -6,7 +8,6 @@ using HarmonyLib;
 using Il2CppInterop.Runtime.Injection;
 using DraftModeTOUM.Managers;
 using DraftModeTOUM.Patches;
-using DraftModeTOUM.DraftTypes;
 using MiraAPI.PluginLoading;
 using Reactor.Networking;
 using Reactor.Networking.Attributes;
@@ -37,12 +38,11 @@ namespace DraftModeTOUM
             try
             {
                 ClassInjector.RegisterTypeInIl2Cpp<DraftTicker>();
-                ClassInjector.RegisterTypeInIl2Cpp<DraftDashboardReporter>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftScreenController>();
+                ClassInjector.RegisterTypeInIl2Cpp<DraftCircleMinigame>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftStatusOverlay>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftRecapOverlay>();
-                ClassInjector.RegisterTypeInIl2Cpp<DraftTypes.BanDraftOverlay>();
-                ClassInjector.RegisterTypeInIl2Cpp<DraftTypes.BanDraftScreenController>();
+                // DraftCancelButton is a plain static class — no IL2CPP registration needed.
                 LoggingSystem.Debug("Draft UI Components registered.");
             }
             catch (System.Exception ex)
@@ -123,7 +123,6 @@ namespace DraftModeTOUM
                 if (!string.IsNullOrWhiteSpace(gameCode))
                 {
                     string code = gameCode.Trim().ToUpperInvariant();
-                    DraftDashboardReporter.CacheLobbyCode(code);
                     Logger.LogInfo($"[LobbyCodePatch] Captured lobby code: {code}");
                 }
             }
@@ -147,11 +146,11 @@ namespace DraftModeTOUM
             DraftScreenController.Hide();
             DraftUiManager.CloseAll();
             DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
             bool draftStillInProgress = DraftManager.IsDraftActive;
             DraftManager.Reset(cancelledBeforeCompletion: draftStillInProgress);
 
             DraftStatusOverlay.ClearHudReferences();
-            DraftDashboardReporter.ClearLobbyCode();
             DraftModePlugin.Logger.LogInfo($"[DraftModePlugin] Session cleared on disconnect.");
         }
     }
@@ -164,6 +163,7 @@ namespace DraftModeTOUM
         {
             DraftScreenController.Hide();
             DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
             DraftModePlugin.Logger.LogInfo("[DraftModePlugin] Game starting...");
         }
     }
@@ -177,6 +177,7 @@ namespace DraftModeTOUM
             DraftScreenController.Hide();
             DraftStatusOverlay.SetState(OverlayState.Hidden);
             DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
         }
     }
 
@@ -189,6 +190,7 @@ namespace DraftModeTOUM
             DraftScreenController.Hide();
             DraftStatusOverlay.SetState(OverlayState.Hidden);
             DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
         }
     }
 
@@ -198,9 +200,8 @@ namespace DraftModeTOUM
         [HarmonyPostfix]
         public static void Postfix()
         {
-            DraftDashboardReporter.EnsureExists();
             DraftStatusOverlay.ClearHudReferences();
-            DraftModePlugin.Logger.LogInfo("[DraftModePlugin] DashboardReporter ensured from MainMenu.");
+            DraftModePlugin.Logger.LogInfo("[DraftModePlugin] MainMenu initialized.");
         }
     }
 
@@ -210,14 +211,7 @@ namespace DraftModeTOUM
         [HarmonyPostfix]
         public static void Postfix(AmongUsClient __instance)
         {
-            DraftScreenController.Hide();
-            DraftUiManager.CloseAll();
-            DraftRecapOverlay.Hide();
-            DraftManager.Reset(cancelledBeforeCompletion: true);
-            DraftStatusOverlay.ClearHudReferences();
-
-            DraftDashboardReporter.EnsureExists();
-            DraftModePlugin.Logger.LogInfo("[DraftModePlugin] DashboardReporter ensured on game join.");
+            DraftModePlugin.Logger.LogInfo("[DraftModePlugin] Game joined.");
 
             try
             {
@@ -248,8 +242,7 @@ namespace DraftModeTOUM
                     }
                     catch { }
 
-                    DraftDashboardReporter.CacheLobbyCode(code);
-                    DraftModePlugin.Logger.LogInfo($"[DraftModePlugin] Fallback lobby code from GameId: {code}");
+                    DraftModePlugin.Logger.LogInfo($"[DraftModePlugin] Lobby code from GameId: {code}");
                 }
             }
             catch { }

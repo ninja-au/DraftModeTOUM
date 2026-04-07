@@ -1,7 +1,7 @@
 using DraftModeTOUM.Managers;
-using DraftModeTOUM.DraftTypes;
 using HarmonyLib;
 using Hazel;
+using AmongUs.GameOptions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -18,12 +18,7 @@ namespace DraftModeTOUM.Patches
         PickConfirmed = 227,
         ForceRole    = 228,
         CancelDraft  = 229,
-        EndDraft     = 230,
-        BanStart     = 231,
-        BanTurn      = 232,
-        BanPick      = 233,
-        BanEnd       = 234,
-        
+        EndDraft     = 230
     }
 
     [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.HandleRpc))]
@@ -145,35 +140,9 @@ namespace DraftModeTOUM.Patches
                 case DraftRpc.EndDraft:
                     
                     DraftManager.Reset(cancelledBeforeCompletion: true);
-                    DraftManager.SendChatLocal("<color=#FFD700>Draft has been cancelled by the host.</color>");
+                    DraftManager.RpcSendMessageToAll("System", "Draft has been cancelled by the host.");
                     return false;
-                case DraftRpc.BanStart:
-                    if (!AmongUsClient.Instance.AmHost) HandleBanStart(reader);
-                    else                                ConsumeBanStart(reader);
-                    return false;
-                case DraftRpc.BanTurn:
-                    if (!AmongUsClient.Instance.AmHost) HandleBanTurn(reader);
-                    else                                ConsumeBanTurn(reader);
-                    return false;
-                case DraftRpc.BanPick:
-                    if (AmongUsClient.Instance.AmHost)
-                    {
-                        reader.ReadByte();
-                        ushort roleId = reader.ReadUInt16();
-                        if (__instance.PlayerId == PlayerControl.LocalPlayer.PlayerId)
-                            return false;
-                        BanDraftType.HandleBanPickHost(__instance.PlayerId, roleId);
-                    }
-                    else
-                    {
-                        byte pickerId = reader.ReadByte();
-                        ushort roleId = reader.ReadUInt16();
-                        BanDraftType.HandleBanPickLocal(pickerId, roleId);
-                    }
-                    return false;
-                case DraftRpc.BanEnd:
-                    BanDraftType.EndBanPhaseLocal();
-                    return false;
+
                 default:
                     return true;
             }
@@ -202,7 +171,6 @@ namespace DraftModeTOUM.Patches
             var pids  = new List<byte>();
             var slots = new List<int>();
             for (int i = 0; i < count; i++) { pids.Add(reader.ReadByte()); slots.Add(reader.ReadInt32()); }
-            BanDraftType.EndBanPhaseLocal();
             DraftManager.SetDraftStateFromHost(total, pids, slots);
             DraftUiManager.CloseAll();
         }
@@ -216,46 +184,10 @@ namespace DraftModeTOUM.Patches
             var    roleIds    = new ushort[roleCount];
             for (int i = 0; i < roleCount; i++) roleIds[i] = reader.ReadUInt16();
 
+            DraftModePlugin.Logger.LogInfo($"[DraftRpcPatch] Received turn announcement for player {pickerId}, roles: {string.Join(",", roleIds.Select(r => ((RoleTypes)r).ToString()))}");
+
             DraftManager.SetClientTurn(turnNumber, slot);
             DisplayTurnAnnouncement(slot, pickerId, roleIds);
-        }
-
-        private static void HandleBanStart(MessageReader reader)
-        {
-            bool showBanned = reader.ReadBoolean();
-            bool anonymous  = reader.ReadBoolean();
-            int count       = reader.ReadInt32();
-            var pids = new List<byte>();
-            for (int i = 0; i < count; i++) pids.Add(reader.ReadByte());
-            BanDraftType.HandleBanStartLocal(pids, showBanned, anonymous);
-        }
-
-        private static void ConsumeBanStart(MessageReader reader)
-        {
-            reader.ReadBoolean();
-            reader.ReadBoolean();
-            int count = reader.ReadInt32();
-            for (int i = 0; i < count; i++) reader.ReadByte();
-        }
-
-        private static void HandleBanTurn(MessageReader reader)
-        {
-            byte pickerId  = reader.ReadByte();
-            int  index     = reader.ReadInt32();
-            int  total     = reader.ReadInt32();
-            int  roleCount = reader.ReadInt32();
-            var roles = new List<ushort>();
-            for (int i = 0; i < roleCount; i++) roles.Add(reader.ReadUInt16());
-            BanDraftType.HandleBanTurnLocal(pickerId, roles, index, total);
-        }
-
-        private static void ConsumeBanTurn(MessageReader reader)
-        {
-            reader.ReadByte();
-            reader.ReadInt32();
-            reader.ReadInt32();
-            int roleCount = reader.ReadInt32();
-            for (int i = 0; i < roleCount; i++) reader.ReadUInt16();
         }
 
         public static void HandleAnnounceTurnLocal(int slot, byte pickerId, List<ushort> roleIds)
@@ -268,7 +200,15 @@ namespace DraftModeTOUM.Patches
             byte localId = PlayerControl.LocalPlayer.PlayerId;
             if (localId == pickerId)
             {
+                DraftModePlugin.Logger.LogInfo($"[DraftRpcPatch] Showing picker for local player with roles: {string.Join(",", roleIds.Select(r => ((RoleTypes)r).ToString()))}");
                 DraftUiManager.ShowPicker(roleIds.ToList());
+                
+                // Play audio cue if set to Turn Start (client-side check)
+                var localSettings = MiraAPI.LocalSettings.LocalSettingsTabSingleton<DraftModeLocalSettings>.Instance;
+                if (localSettings.AudioCueTiming.Value == AudioTiming.TurnStart)
+                {
+                    DraftAudio.PlayDraftStartCue();
+                }
             }
             else
             {
@@ -330,6 +270,7 @@ namespace DraftModeTOUM.Patches
 
         public static void SendTurnAnnouncement(int slot, byte playerId, List<ushort> roleIds, int turnNumber)
         {
+            DraftModePlugin.Logger.LogInfo($"[DraftRpcPatch] Sending turn announcement to player {playerId}, roles: {string.Join(",", roleIds.Select(r => ((RoleTypes)r).ToString()))}");
             DraftRpcPatch.HandleAnnounceTurnLocal(slot, playerId, roleIds);
 
             var writer = AmongUsClient.Instance.StartRpcImmediately(
@@ -400,70 +341,6 @@ namespace DraftModeTOUM.Patches
         
         
         
-        public static void BroadcastBanStart(List<byte> order, bool showBannedRoles, bool anonymousUsers)
-        {
-            var writer = AmongUsClient.Instance.StartRpcImmediately(
-                PlayerControl.LocalPlayer.NetId,
-                (byte)DraftRpc.BanStart,
-                Hazel.SendOption.Reliable, -1);
-            writer.Write(showBannedRoles);
-            writer.Write(anonymousUsers);
-            writer.Write(order.Count);
-            foreach (var pid in order) writer.Write(pid);
-            AmongUsClient.Instance.FinishRpcImmediately(writer);
-        }
-        public static void BroadcastBanTurn(byte pickerId, List<ushort> roleIds, int index, int total)
-        {
-            BanDraftType.HandleBanTurnLocal(pickerId, roleIds, index, total);
-            var writer = AmongUsClient.Instance.StartRpcImmediately(
-                PlayerControl.LocalPlayer.NetId,
-                (byte)DraftRpc.BanTurn,
-                Hazel.SendOption.Reliable, -1);
-            writer.Write(pickerId);
-            writer.Write(index);
-            writer.Write(total);
-            writer.Write(roleIds.Count);
-            foreach (var id in roleIds) writer.Write(id);
-            AmongUsClient.Instance.FinishRpcImmediately(writer);
-        }
-        public static void SendBanPickToHost(ushort roleId)
-        {
-            if (AmongUsClient.Instance.AmHost)
-            {
-                BanDraftType.HandleBanPickHost(PlayerControl.LocalPlayer.PlayerId, roleId);
-            }
-            else
-            {
-                var writer = AmongUsClient.Instance.StartRpcImmediately(
-                    PlayerControl.LocalPlayer.NetId,
-                    (byte)DraftRpc.BanPick,
-                    Hazel.SendOption.Reliable,
-                    AmongUsClient.Instance.HostId);
-                writer.Write(PlayerControl.LocalPlayer.PlayerId);
-                writer.Write(roleId);
-                AmongUsClient.Instance.FinishRpcImmediately(writer);
-            }
-        }
-        public static void BroadcastBanPick(byte pickerId, ushort roleId)
-        {
-            BanDraftType.HandleBanPickLocal(pickerId, roleId);
-            var writer = AmongUsClient.Instance.StartRpcImmediately(
-                PlayerControl.LocalPlayer.NetId,
-                (byte)DraftRpc.BanPick,
-                Hazel.SendOption.Reliable, -1);
-            writer.Write(pickerId);
-            writer.Write(roleId);
-            AmongUsClient.Instance.FinishRpcImmediately(writer);
-        }
-        public static void BroadcastBanEnd()
-        {
-            BanDraftType.EndBanPhaseLocal();
-            var writer = AmongUsClient.Instance.StartRpcImmediately(
-                PlayerControl.LocalPlayer.NetId,
-                (byte)DraftRpc.BanEnd,
-                Hazel.SendOption.Reliable, -1);
-            AmongUsClient.Instance.FinishRpcImmediately(writer);
-        }
         public static void SendForceRoleToHost(string roleName, byte targetId)
         {
             byte myId = PlayerControl.LocalPlayer.PlayerId;
@@ -513,7 +390,7 @@ namespace DraftModeTOUM.Patches
         {
             
             DraftManager.Reset(cancelledBeforeCompletion: true);
-            DraftManager.SendChatLocal("<color=#FFD700>Draft has been cancelled by the host.</color>");
+            DraftManager.RpcSendMessageToAll("System", "Draft has been cancelled by the host.");
 
             
             var writer = AmongUsClient.Instance.StartRpcImmediately(
@@ -524,6 +401,9 @@ namespace DraftModeTOUM.Patches
         }
     }
 }
+
+
+
 
 
 
