@@ -38,7 +38,6 @@ namespace DraftModeTOUM
             try
             {
                 ClassInjector.RegisterTypeInIl2Cpp<DraftTicker>();
-                ClassInjector.RegisterTypeInIl2Cpp<DraftDashboardReporter>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftScreenController>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftCircleMinigame>();
                 ClassInjector.RegisterTypeInIl2Cpp<DraftStatusOverlay>();
@@ -124,7 +123,6 @@ namespace DraftModeTOUM
                 if (!string.IsNullOrWhiteSpace(gameCode))
                 {
                     string code = gameCode.Trim().ToUpperInvariant();
-                    DraftDashboardReporter.CacheLobbyCode(code);
                     Logger.LogInfo($"[LobbyCodePatch] Captured lobby code: {code}");
                 }
             }
@@ -153,7 +151,6 @@ namespace DraftModeTOUM
             DraftManager.Reset(cancelledBeforeCompletion: draftStillInProgress);
 
             DraftStatusOverlay.ClearHudReferences();
-            DraftDashboardReporter.ClearLobbyCode();
             DraftModePlugin.Logger.LogInfo($"[DraftModePlugin] Session cleared on disconnect.");
         }
     }
@@ -203,9 +200,8 @@ namespace DraftModeTOUM
         [HarmonyPostfix]
         public static void Postfix()
         {
-            DraftDashboardReporter.EnsureExists();
             DraftStatusOverlay.ClearHudReferences();
-            DraftModePlugin.Logger.LogInfo("[DraftModePlugin] DashboardReporter ensured from MainMenu.");
+            DraftModePlugin.Logger.LogInfo("[DraftModePlugin] MainMenu initialized.");
         }
     }
 
@@ -215,8 +211,7 @@ namespace DraftModeTOUM
         [HarmonyPostfix]
         public static void Postfix(AmongUsClient __instance)
         {
-            DraftDashboardReporter.EnsureExists();
-            DraftModePlugin.Logger.LogInfo("[DraftModePlugin] DashboardReporter ensured on game join.");
+            DraftModePlugin.Logger.LogInfo("[DraftModePlugin] Game joined.");
 
             try
             {
@@ -247,8 +242,7 @@ namespace DraftModeTOUM
                     }
                     catch { }
 
-                    DraftDashboardReporter.CacheLobbyCode(code);
-                    DraftModePlugin.Logger.LogInfo($"[DraftModePlugin] Fallback lobby code from GameId: {code}");
+                    DraftModePlugin.Logger.LogInfo($"[DraftModePlugin] Lobby code from GameId: {code}");
                 }
             }
             catch { }
