@@ -4,6 +4,7 @@ using TownOfUs.Networking;
 using DraftModeTOUM;
 using DraftModeTOUM.Patches;
 using MiraAPI.Utilities;
+using MiraAPI.Modifiers;
 using HarmonyLib;
 using System;
 using System.Collections;
@@ -12,6 +13,7 @@ using System.Linq;
 using Reactor.Utilities;
 using UnityEngine;
 using TownOfUs.Utilities;
+using TownOfUs.Modifiers;
 
 namespace DraftModeTOUM.Managers
 {
@@ -1056,6 +1058,8 @@ namespace DraftModeTOUM.Managers
                 }
             }
 
+            ApplyGhostRoleBlocks();
+
             bool allDone = _appliedPlayers.Count >= PendingRoleAssignments.Count;
             if (allDone)
             {
@@ -1064,6 +1068,30 @@ namespace DraftModeTOUM.Managers
                 _appliedPlayers.Clear();
             }
             return allDone;
+        }
+
+        private static void ApplyGhostRoleBlocks()
+        {
+            if (!ShouldBlockGhostRoles()) return;
+
+            foreach (var player in PlayerControl.AllPlayerControls.ToArray())
+            {
+                if (player == null || player.Data == null) continue;
+                if (!player.HasModifier<BasicGhostModifier>())
+                {
+                    player.AddModifier<BasicGhostModifier>();
+                }
+            }
+        }
+
+        private static bool ShouldBlockGhostRoles()
+        {
+            return RolePoolBuilder.IsBannedRole("Haunter")
+                || RolePoolBuilder.IsBannedRole("Spectre")
+                || RolePoolBuilder.IsBannedRole("Spectator")
+                || RolePoolBuilder.IsBannedRole("CrewmateGhost")
+                || RolePoolBuilder.IsBannedRole("ImpostorGhost")
+                || RolePoolBuilder.IsBannedRole("GuardianAngel");
         }
 
         public static IEnumerator CoApplyRolesWithRetry()
@@ -1218,7 +1246,6 @@ namespace DraftModeTOUM.Managers
         }
     }
 }
-
 
 
 
