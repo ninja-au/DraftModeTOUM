@@ -27,4 +27,9 @@ public sealed class DraftModeLocalSettings(ConfigFile config) : LocalSettingsTab
     [LocalEnumSetting]
     public ConfigEntry<AudioTiming> AudioCueTiming { get; private set; } =
         config.Bind("Audio", "Cue Timing", AudioTiming.DraftStart, "When to play the draft audio cue sound");
+
+    [LocalToggleSetting]
+    public ConfigEntry<bool> CustomChime { get; private set; } =
+        config.Bind("Audio", "Custom Chime", false,
+            "If enabled, plays BepInEx/config/draftchime.wave or BepInEx/config/draftchime.mp3 instead of the default cue");
 }
