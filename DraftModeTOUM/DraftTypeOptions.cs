@@ -1,3 +1,4 @@
+/*
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
 using MiraAPI.Utilities;
@@ -17,3 +18,4 @@ public sealed class DraftTypeOptions : AbstractOptionGroup
     [ModdedEnumOption("Draft Type", typeof(DraftTypeMode), new[] { "Normal Draft"})]
     public DraftTypeMode DraftType { get; set; } = DraftTypeMode.Normal;
 }
+*/
