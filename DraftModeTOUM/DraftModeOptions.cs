@@ -1,5 +1,6 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
+using MiraAPI.GameOptions.OptionTypes;
 using MiraAPI.Utilities;
 
 namespace DraftModeTOUM;
@@ -12,39 +13,58 @@ public sealed class DraftModeOptions : AbstractOptionGroup
     [ModdedToggleOption("Enable Draft Mode")]
     public bool EnableDraft { get; set; } = true;
 
-    [ModdedToggleOption("Lock Lobby On Draft Start")]
-    public bool LockLobbyOnDraftStart { get; set; } = true;
+    public ModdedToggleOption LockLobbyOnDraftStart { get; set; } = new("Lock Lobby On Draft Start", true)
+    {
+        Visible = () => OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft
+    };
 
-    [ModdedToggleOption("Auto-Start After Draft")]
-    public bool AutoStartAfterDraft { get; set; } = true;
+    public ModdedToggleOption AutoStartAfterDraft { get; set; } = new("Auto-Start After Draft", true)
+    {
+        Visible = () => OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft
+    };
 
-    [ModdedToggleOption("Show Draft Recap")]
-    public bool ShowRecap { get; set; } = true;
+    public ModdedToggleOption ShowRecap { get; set; } = new("Show Draft Recap", true)
+    {
+        Visible = () => OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft
+    };
 
-    [ModdedToggleOption("Use Role Chances For Weighting")]
-    public bool UseRoleChances { get; set; } = true;
+    public ModdedToggleOption UseRoleChances { get; set; } = new("Use Role Chances For Weighting", true)
+    {
+        Visible = () => OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft
+    };
 
-    [ModdedToggleOption("Show Random Option")]
-    public bool ShowRandomOption { get; set; } = true;
+    public ModdedToggleOption ShowRandomOption { get; set; } = new("Show Random Option", true)
+    {
+        Visible = () => OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft
+    };
 
-    [ModdedToggleOption("Show Background Overlay")]
-    public bool ShowBackground { get; set; } = true;
+    public ModdedNumberOption OfferedRolesCount { get; set; } = new("Offered Roles Per Turn", 3f, 1f, 9f, 1f, MiraNumberSuffixes.None, "0")
+    {
+        Visible = () => OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft
+    };
 
-    [ModdedNumberOption("Offered Roles Per Turn", 1f, 9f, 1f, MiraNumberSuffixes.None, "0")]
-    public float OfferedRolesCount { get; set; } = 3f;
+    public ModdedNumberOption TurnDurationSeconds { get; set; } = new("Turn Duration", 10f, 5f, 60f, 1f, MiraNumberSuffixes.None, "0")
+    {
+        Visible = () => OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft
+    };
 
-    [ModdedNumberOption("Turn Duration", 5f, 60f, 1f, MiraNumberSuffixes.Seconds, "0")]
-    public float TurnDurationSeconds { get; set; } = 10f;
+    public ModdedNumberOption ConcurrentPicks { get; set; } = new("Concurrent Picks Per Turn", 1f, 1f, 2f, 1f, MiraNumberSuffixes.Seconds, "0")
+    {
+        Visible = () => OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft
+    };
 
-    [ModdedNumberOption("Concurrent Picks Per Turn", 1f, 2f, 1f, MiraNumberSuffixes.None, "0")]
-    public float ConcurrentPicks { get; set; } = 1f;
+    public ModdedNumberOption MaxImpostors { get; set; } = new("Max Impostors", 2f, 1f, 5f, 1f, MiraNumberSuffixes.None, "0")
+    {
+        Visible = () => OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft
+    };
 
-    [ModdedNumberOption("Max Impostors", 0f, 5f, 1f, MiraNumberSuffixes.None, "0")]
-    public float MaxImpostors { get; set; } = 2f;
+    public ModdedNumberOption MaxNeutralKillings { get; set; } = new("Max Neutral Killings", 2f, 1f, 10f, 1f, MiraNumberSuffixes.None, "0")
+    {
+        Visible = () => OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft
+    };
 
-    [ModdedNumberOption("Max Neutral Killings", 0f, 10f, 1f, MiraNumberSuffixes.None, "0")]
-    public float MaxNeutralKillings { get; set; } = 2f;
-
-    [ModdedNumberOption("Max Neutral Other", 0f, 10f, 1f, MiraNumberSuffixes.None, "0")]
-    public float MaxNeutralPassives { get; set; } = 3f;
+    public ModdedNumberOption MaxNeutralPassives { get; set; } = new("Max Neutral Other", 3f, 1f, 10f, 1f, MiraNumberSuffixes.None, "0")
+    {
+        Visible = () => OptionGroupSingleton<DraftModeOptions>.Instance.EnableDraft
+    };
 }
