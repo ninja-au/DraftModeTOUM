@@ -3,6 +3,7 @@ using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
 using DraftModeTOUM.Managers;
+using Il2CppInterop.Runtime.Attributes;
 using Reactor.Utilities.Attributes;
 
 namespace DraftModeTOUM
@@ -78,6 +79,7 @@ namespace DraftModeTOUM
             }
         }
 
+        [HideFromIl2Cpp]
         private void BuildUI(List<RecapEntry> entries)
         {
             if (HudManager.Instance == null) return;

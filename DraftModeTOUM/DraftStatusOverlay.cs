@@ -7,6 +7,7 @@ using TownOfUs.Assets;
 using TownOfUs.Utilities;
 using UnityEngine;
 using DraftModeTOUM.Managers;
+using Il2CppInterop.Runtime.Attributes;
 using Reactor.Utilities;
 
 namespace DraftModeTOUM
@@ -309,7 +310,7 @@ namespace DraftModeTOUM
                     _roleCardNewRoleObj.SetActive(true);
             }
         }
-
+        [HideFromIl2Cpp]
         private IEnumerator CoWaitForWikiDestroyed(TownOfUs.Modules.Wiki.IngameWikiMinigame wiki)
         {
             
