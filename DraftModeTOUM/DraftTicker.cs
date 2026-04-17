@@ -30,6 +30,11 @@ namespace DraftModeTOUM
 
         private void Update()
         {
+            if (!HudManager.InstanceExists)
+            {
+                Destroy(gameObject);
+                return;
+            }
             DraftManager.Tick(Time.deltaTime);
         }
     }

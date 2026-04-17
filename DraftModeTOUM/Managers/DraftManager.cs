@@ -500,8 +500,6 @@ namespace DraftModeTOUM.Managers
 
         public static void Tick(float deltaTime)
         {
-            
-            
             if (!IsDraftActive || !AmongUsClient.Instance.AmHost || !TurnTimerRunning) return;
             TurnTimeLeft -= deltaTime;
             if (TurnTimeLeft <= 0f)
@@ -1140,6 +1138,7 @@ namespace DraftModeTOUM.Managers
         
         public static void RpcSendMessageToAll(string title, string message)
         {
+            IsDraftActive = false;
             if (!HudManager.InstanceExists)
             {
                 return;
