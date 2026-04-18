@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="cafa4a02-4621-479d-a705-229a6d3e9eb6" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.DraftModeTOUM/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.DraftModeTOUM/.idea/encodings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DraftAudio.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DraftCancelButton.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DraftCircleMinigame.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DraftModeLocalSettings.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DraftModeOptions.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DraftModePlugin.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DraftRecapOverlay.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DraftSelectionMinigame.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DraftStatusOverlay.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DraftTicker.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DraftTypeOptions.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LoggingSystem.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Managers/DraftManager.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Managers/DraftRoleCard.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Managers/DraftUiManager.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Managers/RoleAssigner.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Managers/RoleCategory.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Managers/RoleColors.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Managers/RolePoolBuilder.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Managers/UpCommandRequests.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Patches/ChatPatch.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Patches/DraftCancelButtonPatch.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Patches/DraftRpcPatch.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Patches/GameStartManagerCountdownPatch.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Patches/GameStartPatch.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Patches/Lobbylockpatch.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Patches/ReactorModListPatch.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modinfo.json" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 8
+}]]></component>
+  <component name="ProjectId" id="3CVGuAoYXwcw3u7zOuvBz5nDX59" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "development",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-WS-243.26053.12" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="cafa4a02-4621-479d-a705-229a6d3e9eb6" name="Changes" comment="" />
+      <created>1776463546646</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1776463546646</updated>
+      <workItem from="1776463549032" duration="84000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
