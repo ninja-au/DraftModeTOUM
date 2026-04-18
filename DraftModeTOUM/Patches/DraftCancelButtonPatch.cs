@@ -10,7 +10,6 @@ namespace DraftModeTOUM.Patches
         [HarmonyPostfix]
         public static void Postfix()
         {
-
             DraftCancelButton.Show();
             DraftModePlugin.Logger.LogInfo("[DraftCancelButton] Shown after BroadcastDraftStart.");
         }

@@ -8,6 +8,6 @@ public static class DraftAssets
 {
     private const string ShortPath = "DraftModeTOUM.Resources";
     public static LoadableAsset<Sprite> QuitSprite { get; } =
-        new LoadableResourceAsset($"{ShortPath}.QuitButton.png");
+        new LoadableResourceAsset($"{ShortPath}.QuitButton.png", 83.33f);
 
 }
