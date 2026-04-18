@@ -4,6 +4,21 @@ using Hazel;
 using AmongUs.GameOptions;
 using System.Collections.Generic;
 using System.Linq;
+using AmongUs.GameOptions;
+using Reactor.Utilities.Attributes;
+using TownOfUs.Networking;
+using DraftModeTOUM;
+using DraftModeTOUM.Patches;
+using MiraAPI.Utilities;
+using HarmonyLib;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using Reactor.Utilities;
+using UnityEngine;
+using TownOfUs.Utilities;
+using TownOfUs.Assets;
 
 namespace DraftModeTOUM.Patches
 {
@@ -18,7 +33,8 @@ namespace DraftModeTOUM.Patches
         PickConfirmed = 227,
         ForceRole    = 228,
         CancelDraft  = 229,
-        EndDraft     = 230
+        EndDraft     = 230,
+        CreateNotif  = 231, 
     }
 
     [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.HandleRpc))]
@@ -35,7 +51,7 @@ namespace DraftModeTOUM.Patches
 
                 case DraftRpc.StartDraft:
                     if (!AmongUsClient.Instance.AmHost) HandleStartDraft(reader);
-                    else                                ConsumeStartDraftPacket(reader);
+                    else                                ConsumeStartDraftPacket(reader); 
                     return false;
 
                 case DraftRpc.AnnounceTurn:
@@ -140,9 +156,12 @@ namespace DraftModeTOUM.Patches
                 case DraftRpc.EndDraft:
                     
                     DraftManager.Reset(cancelledBeforeCompletion: true);
-                    DraftManager.RpcSendMessageToAll("System", "Draft has been cancelled by the host.");
                     return false;
+                case DraftRpc.CreateNotif:
 
+                    string notifMessage = reader.ReadString();
+                    Helpers.CreateAndShowNotification(notifMessage,Color.white, new Vector3(0f, 1f, -20f), spr: TouRoleIcons.Traitor.LoadAsset());
+                    return false;
                 default:
                     return true;
             }
@@ -264,10 +283,22 @@ namespace DraftModeTOUM.Patches
                 Hazel.SendOption.Reliable, -1);
             writer.Write(totalSlots);
             writer.Write(pids.Count);
-            for (int i = 0; i < pids.Count; i++) { writer.Write(pids[i]); writer.Write(slots[i]); }
+            for (int i = 0; i < pids.Count; i++) { 
+                writer.Write(pids[i]); writer.Write(slots[i]);
+            }
+            AmongUsClient.Instance.FinishRpcImmediately(writer);
+
+        }
+        public static void BroadcastCreateNotif(string message)
+        {
+            Helpers.CreateAndShowNotification(message, Color.white, new Vector3(0f, 1f, -20f), spr: TouRoleIcons.Traitor.LoadAsset());
+            var writer = AmongUsClient.Instance.StartRpcImmediately(
+            PlayerControl.LocalPlayer.NetId,
+            (byte)DraftRpc.CreateNotif,
+            Hazel.SendOption.Reliable, -1);
+            writer.Write(message);
             AmongUsClient.Instance.FinishRpcImmediately(writer);
         }
-
         public static void SendTurnAnnouncement(int slot, byte playerId, List<ushort> roleIds, int turnNumber)
         {
             DraftModePlugin.Logger.LogInfo($"[DraftRpcPatch] Sending turn announcement to player {playerId}, roles: {string.Join(",", roleIds.Select(r => ((RoleTypes)r).ToString()))}");
@@ -390,7 +421,6 @@ namespace DraftModeTOUM.Patches
         {
             
             DraftManager.Reset(cancelledBeforeCompletion: true);
-            DraftManager.RpcSendMessageToAll("System", "Draft has been cancelled by the host.");
 
             
             var writer = AmongUsClient.Instance.StartRpcImmediately(
