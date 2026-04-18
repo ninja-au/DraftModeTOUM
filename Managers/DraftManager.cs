@@ -4,7 +4,6 @@ using TownOfUs.Networking;
 using DraftModeTOUM;
 using DraftModeTOUM.Patches;
 using MiraAPI.Utilities;
-using MiraAPI.Modifiers;
 using HarmonyLib;
 using System;
 using System.Collections;
@@ -13,7 +12,8 @@ using System.Linq;
 using Reactor.Utilities;
 using UnityEngine;
 using TownOfUs.Utilities;
-using TownOfUs.Modifiers;
+using TownOfUs.Assets;
+
 
 namespace DraftModeTOUM.Managers
 {
@@ -265,6 +265,8 @@ namespace DraftModeTOUM.Managers
 
             DraftNetworkHelper.BroadcastDraftStart(totalSlots, syncPids, syncSlots);
             DraftNetworkHelper.BroadcastSlotNotifications(_pidToSlot);
+            DraftNetworkHelper.BroadcastCreateNotif("<color=#FF0000>Draft Mode</color> has Started. Be Ready to Pick Your Role!");  // ADD THIS
+
 
             DraftStatusOverlay.SetState(OverlayState.Waiting);
             
@@ -278,7 +280,7 @@ namespace DraftModeTOUM.Managers
         }
 
         
-
+        
         private static void ResolveForcedRoleId()
         {
             if (string.IsNullOrWhiteSpace(_forcedRoleName)) return;
@@ -1058,8 +1060,6 @@ namespace DraftModeTOUM.Managers
                 }
             }
 
-            ApplyGhostRoleBlocks();
-
             bool allDone = _appliedPlayers.Count >= PendingRoleAssignments.Count;
             if (allDone)
             {
@@ -1068,30 +1068,6 @@ namespace DraftModeTOUM.Managers
                 _appliedPlayers.Clear();
             }
             return allDone;
-        }
-
-        private static void ApplyGhostRoleBlocks()
-        {
-            if (!ShouldBlockGhostRoles()) return;
-
-            foreach (var player in PlayerControl.AllPlayerControls.ToArray())
-            {
-                if (player == null || player.Data == null) continue;
-                if (!player.HasModifier<BasicGhostModifier>())
-                {
-                    player.AddModifier<BasicGhostModifier>();
-                }
-            }
-        }
-
-        private static bool ShouldBlockGhostRoles()
-        {
-            return RolePoolBuilder.IsBannedRole("Haunter")
-                || RolePoolBuilder.IsBannedRole("Spectre")
-                || RolePoolBuilder.IsBannedRole("Spectator")
-                || RolePoolBuilder.IsBannedRole("CrewmateGhost")
-                || RolePoolBuilder.IsBannedRole("ImpostorGhost")
-                || RolePoolBuilder.IsBannedRole("GuardianAngel");
         }
 
         public static IEnumerator CoApplyRolesWithRetry()
@@ -1138,10 +1114,7 @@ namespace DraftModeTOUM.Managers
         
 
         
-        public static void RpcSendMessageToAll(string title, string message)
-        {
-            MiscUtils.AddFakeChat(PlayerControl.LocalPlayer.Data, title, message, true, false, true);
-        }
+        
 
         private static void ApplyLocalSettings()
         {
@@ -1246,6 +1219,7 @@ namespace DraftModeTOUM.Managers
         }
     }
 }
+
 
 
 
