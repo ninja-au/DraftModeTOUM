@@ -18,6 +18,10 @@ namespace DraftModeTOUM.Patches
         [HarmonyPostfix]
         public static void Postfix(GameStartManager __instance)
         {
+            DraftScreenController.Hide();
+            DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
+
             if (!DraftManager.SkipCountdown) return;
             DraftModePlugin.Logger.LogInfo("[CountdownPatch] Zeroing countDownTimer after BeginGame.");
             __instance.countDownTimer = 0f;

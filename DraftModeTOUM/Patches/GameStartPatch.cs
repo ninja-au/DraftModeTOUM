@@ -14,6 +14,11 @@ namespace DraftModeTOUM.Patches
     {
         public static void Prefix()
         {
+            DraftScreenController.Hide();
+            DraftStatusOverlay.SetState(OverlayState.Hidden);
+            DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
+
             if (DraftManager.PendingRoleAssignments.Count == 0) return;
 
             DraftModePlugin.Logger.LogInfo(
@@ -37,6 +42,10 @@ namespace DraftModeTOUM.Patches
     {
         public static void Postfix()
         {
+            DraftScreenController.Hide();
+            DraftStatusOverlay.SetState(OverlayState.Hidden);
+            DraftRecapOverlay.Hide();
+            DraftCancelButton.Hide();
             if (DraftManager.PendingRoleAssignments.Count == 0) return;
 
             DraftModePlugin.Logger.LogInfo(

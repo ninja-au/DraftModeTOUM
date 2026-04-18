@@ -72,45 +72,6 @@ namespace DraftModeTOUM
             }
         }
 
-        [HarmonyPatch(typeof(GameStartManager), nameof(GameStartManager.BeginGame))]
-        public static class BeginGameCleanupPatch
-        {
-            [HarmonyPostfix]
-            public static void Postfix()
-            {
-                DraftScreenController.Hide();
-                DraftRecapOverlay.Hide();
-                DraftCancelButton.Hide();
-                Logger.LogInfo("[DraftModePlugin] Game starting...");
-            }
-        }
-
-        [HarmonyPatch(typeof(IntroCutscene), nameof(IntroCutscene.CoBegin))]
-        public static class IntroCutsceneHidePatch
-        {
-            [HarmonyPrefix]
-            public static void Prefix()
-            {
-                DraftScreenController.Hide();
-                DraftStatusOverlay.SetState(OverlayState.Hidden);
-                DraftRecapOverlay.Hide();
-                DraftCancelButton.Hide();
-            }
-        }
-
-        [HarmonyPatch(typeof(ShipStatus), nameof(ShipStatus.Start))]
-        public static class ShipStatusStartPatch
-        {
-            [HarmonyPostfix]
-            public static void Postfix()
-            {
-                DraftScreenController.Hide();
-                DraftStatusOverlay.SetState(OverlayState.Hidden);
-                DraftRecapOverlay.Hide();
-                DraftCancelButton.Hide();
-            }
-        }
-
         [HarmonyPatch(typeof(MainMenuManager), nameof(MainMenuManager.Start))]
         public static class MainMenuManagerStartPatch
         {
