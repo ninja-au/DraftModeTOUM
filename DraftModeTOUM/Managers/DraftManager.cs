@@ -1119,17 +1119,17 @@ namespace DraftModeTOUM.Managers
         private static void ApplyLocalSettings()
         {
             var opts = MiraAPI.GameOptions.OptionGroupSingleton<DraftModeOptions>.Instance;
-            TurnDuration          = Mathf.Clamp(opts.TurnDurationSeconds, 5f, 60f);
+            TurnDuration          = Mathf.Clamp(opts.TurnDurationSeconds.Value, 5f, 60f);
             ShowRecap             = opts.ShowRecap;
             AutoStartAfterDraft   = opts.AutoStartAfterDraft;
             LockLobbyOnDraftStart = opts.LockLobbyOnDraftStart;
             UseRoleChances        = opts.UseRoleChances;
-            OfferedRolesCount     = Mathf.Clamp(Mathf.RoundToInt(opts.OfferedRolesCount), 1, 9);
-            ConcurrentPickCount   = Mathf.Clamp(Mathf.RoundToInt(opts.ConcurrentPicks), 1, 2);
+            OfferedRolesCount     = Mathf.Clamp(Mathf.RoundToInt(opts.OfferedRolesCount.Value), 1, 9);
+            ConcurrentPickCount   = Mathf.Clamp(Mathf.RoundToInt(opts.ConcurrentPicks.Value), 1, 2);
             ShowRandomOption      = opts.ShowRandomOption;
-            MaxImpostors          = Mathf.Clamp(Mathf.RoundToInt(opts.MaxImpostors), 0, 10);
-            MaxNeutralKillings    = Mathf.Clamp(Mathf.RoundToInt(opts.MaxNeutralKillings), 0, 10);
-            MaxNeutralPassives    = Mathf.Clamp(Mathf.RoundToInt(opts.MaxNeutralPassives), 0, 10);
+            MaxImpostors          = Mathf.Clamp(Mathf.RoundToInt(opts.MaxImpostors.Value), 0, 10);
+            MaxNeutralKillings    = Mathf.Clamp(Mathf.RoundToInt(opts.MaxNeutralKillings.Value), 0, 10);
+            MaxNeutralPassives    = Mathf.Clamp(Mathf.RoundToInt(opts.MaxNeutralPassives.Value), 0, 10);
         }
 
         private static int GetDraftedCount(ushort id) => _draftedCounts.TryGetValue(id, out var c) ? c : 0;
