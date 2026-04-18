@@ -1,231 +1,175 @@
-using System.Collections;
+using System;
+using System.Reflection;
 using DraftModeTOUM.Managers;
 using DraftModeTOUM.Patches;
-using Reactor.Utilities;
-using TMPro;
+using MiraAPI.Utilities.Assets;
+using MiraAPI.Utilities;
+using MiraAPI.Hud;
+using TownOfUs.Assets;
+using TownOfUs.Buttons;
+using TownOfUs.Utilities;
 using UnityEngine;
-using UnityEngine.Events;
 
+// Kept in the root namespace so DraftModePlugin.cs and DraftCancelButtonPatch.cs
+// can reference it without any extra using directive.
 namespace DraftModeTOUM;
 
+public sealed class DraftCancelButton : TownOfUsButton
+{
+    // ── Static handle so patches can call Show() / Hide() ────────────────────
+    private static DraftCancelButton? _instance;
 
-    public static class DraftCancelButton
+    public static void Show()
     {
-        private static GameObject _root;
-        private static SpriteRenderer _iconSr;
-        private static SpriteRenderer _bgSr;
-        private static TextMeshPro _label;
-        private static PassiveButton _btn;
-
-        private const float ButtonScale = 0.55f;
-        private const float LabelYOffset = -0.52f;
-        private const float LabelFontSize = 3.5f;
-
-        public static void Show()
-        {
-            if (!AmongUsClient.Instance.AmHost) return;
-            if (_root != null) return;
-
-            Build();
-            if (_root == null) return;
-
-            _root.SetActive(true);
-            Coroutines.Start(CoPopIn(_root.transform));
-        }
-
-        private static IEnumerator CoPopIn(Transform t)
-        {
-            if (t == null) yield break;
-            const float dur = 0.20f;
-            for (float elapsed = 0f; elapsed < dur; elapsed += Time.deltaTime)
-            {
-                if (t == null) yield break;
-                float s = EaseOutBack(elapsed / dur) * ButtonScale;
-                t.localScale = Vector3.one * s;
-                yield return null;
-            }
-            if (t != null)
-                t.localScale = Vector3.one * ButtonScale;
-        }
-
-        private static float EaseOutBack(float t)
-        {
-            const float c1 = 1.70158f, c3 = c1 + 1f;
-            return 1f + c3 * Mathf.Pow(t - 1f, 3f) + c1 * Mathf.Pow(t - 1f, 2f);
-        }
-
-        public static void Hide()
-        {
-            if (_root == null) return;
-            _root.SetActive(false);
-            UnityEngine.Object.Destroy(_root);
-            _root = null;
-            _btn = null;
-            _label = null;
-            _iconSr = null;
-            _bgSr = null;
-        }
-
-        private static void Build()
-        {
-            var hud = HudManager.Instance;
-            if (hud == null) return;
-
-            var useBtn = hud.UseButton;
-            if (useBtn == null)
-            {
-                DraftModePlugin.Logger.LogWarning("[DraftCancelButton] UseButton is null — cannot position button.");
-                return;
-            }
-
-            Vector3 useBtnLocalPos = useBtn.transform.localPosition;
-
-            float buttonDiameter = MeasureButtonDiameter(useBtn.gameObject);
-            DraftModePlugin.Logger.LogInfo(
-                $"[DraftCancelButton] UseButton localPos={useBtnLocalPos}, measured diameter={buttonDiameter}");
-
-            Vector3 ourLocalPos = new Vector3(
-                useBtnLocalPos.x - buttonDiameter,
-                useBtnLocalPos.y,
-                useBtnLocalPos.z);
-
-            _root = new GameObject("DraftCancelButtonRoot");
-            _root.transform.SetParent(useBtn.transform.parent, false);
-            _root.transform.localPosition = ourLocalPos;
-            _root.transform.localScale = Vector3.zero;
-            var iconGo = new GameObject("Icon");
-            iconGo.transform.SetParent(_root.transform, false);
-            iconGo.transform.localPosition = Vector3.zero;
-            iconGo.transform.localScale = Vector3.one * 0.75f;
-
-            _iconSr = iconGo.AddComponent<SpriteRenderer>();
-            _iconSr.sprite = DraftAssets.QuitSprite.LoadAsset();
-            _iconSr.color = Color.white;
-            _iconSr.sortingLayerName = "UI";
-            _iconSr.sortingOrder = 51;
-
-            var labelGo = new GameObject("Label");
-            labelGo.transform.SetParent(_root.transform, false);
-            labelGo.transform.localPosition = new Vector3(0f, LabelYOffset, 0f);
-
-            _label = labelGo.AddComponent<TextMeshPro>();
-            CopyAuFont(_label, hud);
-            _label.text = "Cancel Draft";
-
-            var lr = labelGo.GetComponent<Renderer>();
-            if (lr != null)
-            {
-                lr.sortingLayerName = "UI";
-                lr.sortingOrder = 52;
-            }
-
-            var col = _root.AddComponent<CircleCollider2D>();
-            col.radius = (buttonDiameter * 0.5f) / ButtonScale;
-
-            _btn = _root.AddComponent<PassiveButton>();
-            _btn.Colliders = new Collider2D[] { col };
-            _btn.OnClick = new UnityEngine.UI.Button.ButtonClickedEvent();
-            _btn.OnMouseOver = new UnityEngine.Events.UnityEvent();
-            _btn.OnMouseOut = new UnityEngine.Events.UnityEvent();
-
-            _btn.OnClick.AddListener((UnityAction)OnClicked);
-
-            _btn.OnMouseOver.AddListener((UnityAction)(() =>
-            {
-                if (_root != null) _root.transform.localScale = Vector3.one * (ButtonScale * 1.15f);
-                if (_bgSr != null) _bgSr.color = new Color32(255, 60, 60, 255);
-            }));
-            _btn.OnMouseOut.AddListener((UnityAction)(() =>
-            {
-                if (_root != null) _root.transform.localScale = Vector3.one * ButtonScale;
-                if (_bgSr != null) _bgSr.color = new Color32(200, 30, 30, 235);
-            }));
-        }
-
-        private static void OnClicked()
-        {
-            if (!AmongUsClient.Instance.AmHost) return;
-            if (!DraftManager.IsDraftActive) return;
-
-            DraftModePlugin.Logger.LogInfo("[DraftCancelButton] Cancel clicked by host.");
-            DraftNetworkHelper.BroadcastCancelDraft();
-            DraftManager.Reset(cancelledBeforeCompletion: true);
-            DraftManager.RpcSendMessageToAll("System", "Draft has been cancelled by the host.");
-            DraftNetworkHelper.BroadcastDraftEnd();
-            Hide();
-        }
-
-        private static float MeasureButtonDiameter(GameObject actionButtonGo)
-        {
-            float best = 0f;
-            try
-            {
-                foreach (var sr in actionButtonGo.GetComponentsInChildren<SpriteRenderer>(true))
-                {
-                    if (sr == null || sr.sprite == null) continue;
-                    float w = sr.bounds.size.x;
-                    if (w > best) best = w;
-                }
-            }
-            catch
-            {
-            }
-
-            if (best > 0.3f && best < 5f)
-                return best * 1.1f;
-
-            DraftModePlugin.Logger.LogWarning(
-                "[DraftCancelButton] Could not measure button; using fallback diameter 1.3.");
-            return 1.3f;
-        }
-
-
-        private static void CopyAuFont(TextMeshPro tmp, HudManager hud)
-        {
-            tmp.fontSize = LabelFontSize;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = Color.red;
-            tmp.characterSpacing = -.2f;
-            tmp.enableWordWrapping = false;
-
-            try
-            {
-                var src = hud.UseButton?.GetComponentInChildren<TextMeshPro>(true);
-                if (src != null)
-                {
-                    tmp.font = src.font;
-                    tmp.fontMaterial = src.fontMaterial;
-                    DraftModePlugin.Logger.LogInfo("[DraftCancelButton] Font: UseButton label.");
-                    return;
-                }
-            }
-            catch
-            {
-            }
-
-            try
-            {
-                var src = hud.KillButton?.GetComponentInChildren<TextMeshPro>(true);
-                if (src != null)
-                {
-                    tmp.font = src.font;
-                    tmp.fontMaterial = src.fontMaterial;
-                    DraftModePlugin.Logger.LogInfo("[DraftCancelButton] Font: KillButton label.");
-                    return;
-                }
-            }
-            catch
-            {
-            }
-
-            try
-            {
-                tmp.font = hud.TaskPanel.taskText.font;
-                tmp.fontMaterial = hud.TaskPanel.taskText.fontMaterial;
-                DraftModePlugin.Logger.LogInfo("[DraftCancelButton] Font: TaskPanel fallback.");
-            }
-            catch
-            {
-            }
-        }
+        if (_instance != null) _instance.Disabled = false;
     }
+
+    public static void Hide()
+    {
+        if (_instance != null) _instance.Disabled = true;
+    }
+
+    public override string Name => "Cancel Draft";
+    public override float InitialCooldown => 0f;
+    public override float Cooldown => 0f;
+
+    public override bool ZeroIsInfinite { get; set; } = true;
+    public override ButtonLocation Location => ButtonLocation.BottomRight;
+
+
+    public override Color TextOutlineColor => new Color32(198, 22, 22, 255);
+
+    public override LoadableAsset<Sprite> Sprite => new EmbeddedSpriteAsset(GetButtonSprite());
+
+    public override bool Disabled { get; set; } = true;
+
+    public override bool Enabled(RoleBehaviour? role)
+    {
+        return AmongUsClient.Instance.AmHost && !Disabled;
+    }
+
+    public override bool CanUse()
+    {
+        return base.CanUse() && DraftManager.IsDraftActive && !Disabled;
+    }
+    public override void CreateButton(Transform parent)
+    {
+        base.CreateButton(parent);
+        _instance = this;
+
+        if (Button?.graphic != null)
+        {
+        Button.graphic.transform.localScale = Vector3.one * 1.2f;
+        }
+        var useBtn = HudManager.Instance?.UseButton;
+if (useBtn != null && Button != null)
+{
+    var pos = Button.transform.localPosition;
+    var usePos = useBtn.transform.localPosition;
+    Button.transform.localPosition = new Vector3(
+        pos.x,
+        usePos.y,
+        pos.z);
+}
+        }
+    
+
+    protected override void OnClick()
+    {
+        if (!AmongUsClient.Instance.AmHost) return;
+        if (!DraftManager.IsDraftActive) return;
+
+        DraftModePlugin.Logger.LogInfo("[DraftCancelButton] Cancel clicked by host.");
+        DraftNetworkHelper.BroadcastCancelDraft();
+        DraftNetworkHelper.BroadcastCreateNotif("<color=#FF0000>Draft Mode</color> has been cancelled by the <color=#FFBFCC><b>Host</b></color>!");  // ADD THIS
+        DraftManager.Reset(cancelledBeforeCompletion: true);
+        DraftNetworkHelper.BroadcastDraftEnd();
+        Hide();
+    }
+
+    // ── Sprite loading ────────────────────────────────────────────────────────
+
+    private static Sprite? _cachedButtonSprite;
+
+    private static Sprite GetButtonSprite()
+    {
+        if (_cachedButtonSprite != null) return _cachedButtonSprite;
+
+        try
+        {
+            var asm          = Assembly.GetExecutingAssembly();
+            const string res = "DraftModeTOUM.button.png";
+
+            using var stream = asm.GetManifestResourceStream(res);
+            if (stream != null)
+            {
+                var bytes = new byte[stream.Length];
+                stream.Read(bytes, 0, bytes.Length);
+
+                var tex       = new Texture2D(4, 4, TextureFormat.RGBA32, false);
+                tex.hideFlags = HideFlags.HideAndDontSave;
+
+                if (ImageConversion.LoadImage(tex, bytes))
+                {
+                    _cachedButtonSprite           = UnityEngine.Sprite.Create(
+                        tex,
+                        new Rect(0, 0, tex.width, tex.height),
+                        new Vector2(0.5f, 0.5f),
+                        100f);
+                    _cachedButtonSprite.hideFlags = HideFlags.HideAndDontSave;
+
+                    DraftModePlugin.Logger.LogInfo(
+                        $"[DraftCancelButton] Loaded embedded button.png ({tex.width}x{tex.height}).");
+                    return _cachedButtonSprite;
+                }
+
+                DraftModePlugin.Logger.LogWarning("[DraftCancelButton] ImageConversion.LoadImage failed.");
+            }
+            else
+            {
+                string available = string.Join(", ", asm.GetManifestResourceNames());
+                DraftModePlugin.Logger.LogWarning(
+                    $"[DraftCancelButton] Resource '{res}' not found. Available: [{available}]");
+            }
+        }
+        catch (Exception ex)
+        {
+            DraftModePlugin.Logger.LogWarning(
+                $"[DraftCancelButton] Exception loading sprite: {ex.Message}");
+        }
+
+        DraftModePlugin.Logger.LogWarning("[DraftCancelButton] Using fallback X sprite.");
+        _cachedButtonSprite = MakeXSprite();
+        return _cachedButtonSprite;
+    }
+
+    private static Sprite MakeXSprite()
+    {
+        const int S   = 80;
+        const int ARM = 6;
+        var tex       = new Texture2D(S, S, TextureFormat.RGBA32, false);
+        tex.hideFlags = HideFlags.HideAndDontSave;
+        var px        = new Color32[S * S];
+
+        for (int i = 0; i < px.Length; i++)
+            px[i] = new Color32(200, 30, 30, 255);
+
+        for (int i = 8; i < S - 8; i++)
+        {
+            for (int t = -ARM; t <= ARM; t++)
+            {
+                int x1 = Mathf.Clamp(i + t,           0, S - 1);
+                int x2 = Mathf.Clamp((S - 1 - i) + t, 0, S - 1);
+                int y  = Mathf.Clamp(i,                0, S - 1);
+                px[y * S + x1] = new Color32(255, 255, 255, 255);
+                px[y * S + x2] = new Color32(255, 255, 255, 255);
+            }
+        }
+
+        tex.SetPixels32(px);
+        tex.Apply();
+        var spr       = UnityEngine.Sprite.Create(tex, new Rect(0, 0, S, S), new Vector2(0.5f, 0.5f), S * 0.9f);
+        spr.hideFlags = HideFlags.HideAndDontSave;
+        return spr;
+    }
+}

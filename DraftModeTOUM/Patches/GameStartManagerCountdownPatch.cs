@@ -88,7 +88,6 @@ namespace DraftModeTOUM.Patches
             gsm.countDownTimer = 10f;
             
             
-            DraftManager.RpcSendMessageToAll("System", "Draft starting! Wait for your turn to pick a role.");
             DraftManager.StartDraft();
         }
     }

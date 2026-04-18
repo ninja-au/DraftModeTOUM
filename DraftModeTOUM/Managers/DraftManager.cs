@@ -4,7 +4,6 @@ using TownOfUs.Networking;
 using DraftModeTOUM;
 using DraftModeTOUM.Patches;
 using MiraAPI.Utilities;
-using MiraAPI.Modifiers;
 using HarmonyLib;
 using System;
 using System.Collections;
@@ -13,7 +12,8 @@ using System.Linq;
 using Reactor.Utilities;
 using UnityEngine;
 using TownOfUs.Utilities;
-using TownOfUs.Modifiers;
+using TownOfUs.Assets;
+
 
 namespace DraftModeTOUM.Managers
 {
@@ -265,6 +265,8 @@ namespace DraftModeTOUM.Managers
 
             DraftNetworkHelper.BroadcastDraftStart(totalSlots, syncPids, syncSlots);
             DraftNetworkHelper.BroadcastSlotNotifications(_pidToSlot);
+            DraftNetworkHelper.BroadcastCreateNotif("<color=#FF0000>Draft Mode</color> has Started. Be Ready to Pick Your Role!");  // ADD THIS
+
 
             DraftStatusOverlay.SetState(OverlayState.Waiting);
             
@@ -278,7 +280,7 @@ namespace DraftModeTOUM.Managers
         }
 
         
-
+        
         private static void ResolveForcedRoleId()
         {
             if (string.IsNullOrWhiteSpace(_forcedRoleName)) return;
@@ -500,6 +502,8 @@ namespace DraftModeTOUM.Managers
 
         public static void Tick(float deltaTime)
         {
+            
+            
             if (!IsDraftActive || !AmongUsClient.Instance.AmHost || !TurnTimerRunning) return;
             TurnTimeLeft -= deltaTime;
             if (TurnTimeLeft <= 0f)
@@ -1056,8 +1060,6 @@ namespace DraftModeTOUM.Managers
                 }
             }
 
-            ApplyGhostRoleBlocks();
-
             bool allDone = _appliedPlayers.Count >= PendingRoleAssignments.Count;
             if (allDone)
             {
@@ -1066,30 +1068,6 @@ namespace DraftModeTOUM.Managers
                 _appliedPlayers.Clear();
             }
             return allDone;
-        }
-
-        private static void ApplyGhostRoleBlocks()
-        {
-            if (!ShouldBlockGhostRoles()) return;
-
-            foreach (var player in PlayerControl.AllPlayerControls.ToArray())
-            {
-                if (player == null || player.Data == null) continue;
-                if (!player.HasModifier<BasicGhostModifier>())
-                {
-                    player.AddModifier<BasicGhostModifier>();
-                }
-            }
-        }
-
-        private static bool ShouldBlockGhostRoles()
-        {
-            return RolePoolBuilder.IsBannedRole("Haunter")
-                || RolePoolBuilder.IsBannedRole("Spectre")
-                || RolePoolBuilder.IsBannedRole("Spectator")
-                || RolePoolBuilder.IsBannedRole("CrewmateGhost")
-                || RolePoolBuilder.IsBannedRole("ImpostorGhost")
-                || RolePoolBuilder.IsBannedRole("GuardianAngel");
         }
 
         public static IEnumerator CoApplyRolesWithRetry()
@@ -1136,30 +1114,22 @@ namespace DraftModeTOUM.Managers
         
 
         
-        public static void RpcSendMessageToAll(string title, string message)
-        {
-            IsDraftActive = false;
-            if (!HudManager.InstanceExists)
-            {
-                return;
-            }
-            MiscUtils.AddFakeChat(PlayerControl.LocalPlayer.Data, title, message, true, false, true);
-        }
+        
 
         private static void ApplyLocalSettings()
         {
             var opts = MiraAPI.GameOptions.OptionGroupSingleton<DraftModeOptions>.Instance;
-            TurnDuration          = Mathf.Clamp(opts.TurnDurationSeconds.Value, 5f, 60f);
+            TurnDuration          = Mathf.Clamp(opts.TurnDurationSeconds, 5f, 60f);
             ShowRecap             = opts.ShowRecap;
             AutoStartAfterDraft   = opts.AutoStartAfterDraft;
             LockLobbyOnDraftStart = opts.LockLobbyOnDraftStart;
             UseRoleChances        = opts.UseRoleChances;
-            OfferedRolesCount     = Mathf.Clamp(Mathf.RoundToInt(opts.OfferedRolesCount.Value), 1, 9);
-            ConcurrentPickCount   = Mathf.Clamp(Mathf.RoundToInt(opts.ConcurrentPicks.Value), 1, 2);
+            OfferedRolesCount     = Mathf.Clamp(Mathf.RoundToInt(opts.OfferedRolesCount), 1, 9);
+            ConcurrentPickCount   = Mathf.Clamp(Mathf.RoundToInt(opts.ConcurrentPicks), 1, 2);
             ShowRandomOption      = opts.ShowRandomOption;
-            MaxImpostors          = Mathf.Clamp(Mathf.RoundToInt(opts.MaxImpostors.Value), 0, 10);
-            MaxNeutralKillings    = Mathf.Clamp(Mathf.RoundToInt(opts.MaxNeutralKillings.Value), 0, 10);
-            MaxNeutralPassives    = Mathf.Clamp(Mathf.RoundToInt(opts.MaxNeutralPassives.Value), 0, 10);
+            MaxImpostors          = Mathf.Clamp(Mathf.RoundToInt(opts.MaxImpostors), 0, 10);
+            MaxNeutralKillings    = Mathf.Clamp(Mathf.RoundToInt(opts.MaxNeutralKillings), 0, 10);
+            MaxNeutralPassives    = Mathf.Clamp(Mathf.RoundToInt(opts.MaxNeutralPassives), 0, 10);
         }
 
         private static int GetDraftedCount(ushort id) => _draftedCounts.TryGetValue(id, out var c) ? c : 0;
@@ -1249,6 +1219,7 @@ namespace DraftModeTOUM.Managers
         }
     }
 }
+
 
 
 
