@@ -682,6 +682,14 @@
       <HintPath>libs\__Generated.dll</HintPath>
       <Private>False</Private>
     </Reference>
+<Reference Include="UnityEngine.UnityWebRequestModule">
+  <HintPath>libs\UnityEngine.UnityWebRequestModule.dll</HintPath>
+  <Private>False</Private>
+</Reference>
+<Reference Include="UnityEngine.UnityWebRequestAudioModule">
+  <HintPath>libs\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
+  <Private>False</Private>
+</Reference>
   </ItemGroup>
 
   <!-- New files added in 1.1.0 -->
