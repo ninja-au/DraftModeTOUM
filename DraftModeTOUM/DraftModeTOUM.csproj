@@ -695,7 +695,7 @@
   <!-- New files added in 1.1.0 -->
   <ItemGroup>
         <EmbeddedResource Include="modinfo.json"/>
-        <EmbeddedResource Include="Resources.DraftLogo.png"/>
-        <EmbeddedResource Include="Resources.QuitButton.png" />
+        <EmbeddedResource Include="Resources/DraftLogo.png"/>
+        <EmbeddedResource Include="Resources/QuitButton.png" />
     </ItemGroup>
 </Project>
