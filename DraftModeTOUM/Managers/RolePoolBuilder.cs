@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using AmongUs.GameOptions;
+﻿using AmongUs.GameOptions;
 using MiraAPI.Roles;
 using MiraAPI.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TownOfUs.Roles.Neutral;
 using TownOfUs.Utilities;
 
 namespace DraftModeTOUM.Managers
@@ -83,7 +84,7 @@ namespace DraftModeTOUM.Managers
                         continue;
                 }
 
-                if (IsBannedRole(role.NiceName)) continue;
+                if (IsBannedRole(role.GetRoleLocaleKey())) continue;
 
                 int count  = roleOptions.GetNumPerGame(role.Role);
                 int chance = roleOptions.GetChancePerGame(role.Role);
@@ -109,7 +110,7 @@ namespace DraftModeTOUM.Managers
                 "Haunter", "Spectre", "Teleporter", "Pestilence", "Traitor", "Mayor", "Spectator", "CrewmateGhost", "ImpostorGhost", "GuardianAngel"
             };
 
-        public static bool IsBannedRole(string niceName) => _bannedRoles.Contains(niceName);
+        public static bool IsBannedRole(string name) => _bannedRoles.Contains(name);
 
         private static void AddRole(DraftRolePool pool, ushort roleId, int maxCount, int weight, RoleFaction faction)
         {
@@ -133,8 +134,9 @@ namespace DraftModeTOUM.Managers
             foreach (var role in RoleManager.Instance.AllRoles.ToArray())
             {
                 if (role == null) continue;
-                if (IsBannedRole(role.NiceName)) continue;
+                if (IsBannedRole(role.GetRoleLocaleKey())) continue;
                 if (role.Role is RoleTypes.CrewmateGhost or RoleTypes.ImpostorGhost or RoleTypes.GuardianAngel) continue;
+                if (role is NeutralGhostRole) continue;
 
                 var faction = role.IsImpostor
                     ? RoleFaction.Impostor
